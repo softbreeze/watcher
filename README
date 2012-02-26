@@ -25,7 +25,14 @@ Installation
  Remember to change $INSTALL_DIR in above code!
 
 To do list:
-- moving script out of user dir
+- moving script out of user dir (in progress)
 - currently if one of directories are deleted, the scipts stops working - it should be fixed.
-- (easy) activating user tracking only if "certain user can connect to to internet and certain web page contains certain string"
+- activating user tracking only if "certain user can connect to to internet and certain web page contains certain string"
+- keylogger
+- using dropbox, ftp and ssh or other to upload data
+- (mayby) forcing activation of vnc/ssh
+
+P.S.
+Sorry for bad english, but I better speak than write
+Sorry for bad code - I'm still learning
 
