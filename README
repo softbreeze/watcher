@@ -1,0 +1,31 @@
+Requied packages:
+-bash
+-curl
+-imagemagick & convert
+-mencoder & mplayer OR
+-streamer
+-zip
+-sendemail
+-ifconfig, iwconfig, iwlist, lsmod, date
+
+Installation
+1) edit "watcher" file, which contains important variables
+2) edit function.sh with proper server information (smtp server, port, user, password)
+3) run ./watch_inic.sh - it should install the script if run for the first time
+4) now you have to manually add $INSTALL_DIR/watcher.sh to gnome/kde autostart (you can do what is done in next step, but add it to PostLogin dir) 
+5) add to /etc/gdm/PostSession/Default folowing line
+
+	logoutscript="$INSTALL_DIR/watcher/stop.sh";
+	if [ -x "$logoutscript" ] ; then
+	su $USER -c "$logoutscript"
+	#`$logoutscript`
+	fi
+
+ which will run "stop.sh", which will kill all watcher process and sub-processes on logout.
+ Remember to change $INSTALL_DIR in above code!
+
+To do list:
+- moving script out of user dir
+- currently if one of directories are deleted, the scipts stops working - it should be fixed.
+- (easy) activating user tracking only if "certain user can connect to to internet and certain web page contains certain string"
+
