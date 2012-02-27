@@ -2,6 +2,7 @@
 ./kill_soft2.sh "inf.sh"  &
 ./kill_soft2.sh "screenshot.sh"  &
 ./kill_soft2.sh "send_later.sh"  &
+./kill_soft2.sh "a_up_dropbox.sh"  &
 ./kill_soft2.sh "watcher.sh"  &
 COUNTER=0
 MaxTimes=20
