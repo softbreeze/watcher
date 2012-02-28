@@ -1,30 +1,57 @@
+# Check if directory exist before cleaning it
+#
+
 source function.sh
 
 function check_connection {
-# It would be better to ping google or yahoo or microsoft, or all at once.
-#ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && CONNECTION_MODE=1 || CONNECTION_MODE=0
-CONNECTION_MODE=0
-ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1
-ping -q -w 1 -c 1 www.yahoo.com > /dev/null && CONNECTION_MODE=1
-ping -q -w 1 -c 1 www.microsoft.com > /dev/null && CONNECTION_MODE=1
+	# It would be better to ping google or yahoo or microsoft, or all at once.
+	#ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && CONNECTION_MODE=1 || CONNECTION_MODE=0
+	CONNECTION_MODE=0
+	ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1
+	ping -q -w 1 -c 1 www.yahoo.com > /dev/null && CONNECTION_MODE=1
+	ping -q -w 1 -c 1 www.microsoft.com > /dev/null && CONNECTION_MODE=1
 }
 
 function check_smtp {
-#return 0 # if connection false
-DATA=`date +"%Y-%m-%d-%H-%M-%S"`
-fsendemail_na "Test message - $DATA" "Test message"
-if [[ $RESP == *"Email was sent successfully!" ]]
-then
-	CONNECTION_SMTP=1
-else
-	CONNECTION_SMTP=0
-fi
+	#return 0 # if connection false
+	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
+	fsendemail_na "Test message - $DATA" "Test message"
+	if [[ $RESP == *"Email was sent successfully!" ]]
+	then
+		CONNECTION_SMTP=1
+	else
+		CONNECTION_SMTP=0
+	fi
+}
+
+function check_dir_size {
+	DIR_NAME="$1"
+	DIRSIZE=`du -s $DIR_NAME/ | cut -f 1`
+	CLEAN_DIR_WHILE=0
+	while [ $CLEAN_DIR_WHILE -lt 1 ]; do
+		if [ $DIRSIZE -ge $2 ]
+		then
+			clean_dir $DIR_NAME
+			clean_dir $DIR_NAME
+			clean_dir $DIR_NAME
+		else
+			CLEAN_DIR_WHILE=$(($CLEAN_DIR_WHILE+1))
+		fi
+		DIRSIZE=`du -s $DIR_NAME/ | cut -f 1`
+	done
+	[ $DIRSIZE -ge $3 ] && clean_dir $DIR_NAME
+}
+
+function clean_dir {
+	file=`/bin/ls -1 "$1" | sort --random-sort | head -1`
+	path=`readlink --canonicalize "$1/$file"` # Converts to full path
+	rm "$path"
 }
 
 CONNECTION_MODE=0 # 0-no connection; 1-connection
 SMTP=0
 
-T_INITIAL_DELAY=0
+T_INITIAL_DELAY=20
 T_CHECK_STATUS=120
 T_SMTP_CHECK_EVERY=20 # Check every n passes of status check
 T_INF_CHECK=900
@@ -34,10 +61,15 @@ T_CAM_EVERY=8
 SMTP_COUNTER=0
 CAM_COUNTER=0
 CAM_FIRST=0
-R_DB=1 # 0 - don't; 1 - use dropbox
+R_DB=0 # 0 - don't; 1 - use dropbox
 R_SCP=0
 R_FTP=0
-DB_DIR="Dropbox/.config"
+DB_DIR="../Dropbox/.config"
+DB_DIR=`readlink --canonicalize "$DB_DIR"`
+DIR_WARNING_SIZE=2000000
+DIR_MAX_SIZE=6000000
+DB_DIR_WARNING_SIZE=4000000
+DB_DIR_MAX_SIZE=12000000
 
 sleep $T_INITIAL_DELAY
 
@@ -123,26 +155,12 @@ do
 	################
 	# Part when we clean directiories if they got too big
 	########
-	DIRSIZE=`du -s tosendlater/ | cut -f 1`
-	if [ $DIRSIZE -ge 2000000 ]
+	check_dir_size "tosendlater" $DIR_MAX_SIZE $DIR_WARNING_SIZE
+
+	if [ $R_DB -eq 1 ]
 	then
-		dirD='tosendlater'
-		file=`/bin/ls -1 "$dirD" | sort --random-sort | head -1`
-		path=`readlink --canonicalize "$dirD/$file"` # Converts to full path
-		rm "$path"
-	fi
-	CLEAN_DIR_WHILE=0
-	while [ $CLEAN_DIR_WHILE -lt 1 ]; do
-		if [ $DIRSIZE -ge 6000000 ]
-		then
-			dirD='tosendlater'
-			file=`/bin/ls -1 "$dirD" | sort --random-sort | head -1`
-			path=`readlink --canonicalize "$dirD/$file"` # Converts to full path
-			rm "$path"
-		else
-			CLEAN_DIR_WHILE=$(($CLEAN_DIR_WHILE+1))
-		fi
-	done
+		check_dir_size "$DB_DIR" $DB_DIR_MAX_SIZE $DB_DIR_WARNING_SIZE
+	fi 
 
 
 	################
