@@ -15,7 +15,8 @@ function check_connection {
 function check_smtp {
 	#return 0 # if connection false
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
-	fsendemail_na "Test message - $DATA" "Test message"
+	touch check.zip; echo "this is a test zip file">check.zip
+	fsendemail "Test message - $DATA" "Test message" "check.zip"
 	if [[ $RESP == *"Email was sent successfully!" ]]
 	then
 		CONNECTION_SMTP=1
@@ -54,10 +55,10 @@ SMTP=0
 T_INITIAL_DELAY=20
 T_CHECK_STATUS=120
 T_SMTP_CHECK_EVERY=20 # Check every n passes of status check
-T_INF_CHECK=900
-T_SCREEN_CHECK=300
+T_INF_CHECK=900 # 15 mint
+T_SCREEN_CHECK=300 # 5 min
 T_CAM_DELAY=60
-T_CAM_EVERY=8
+T_CAM_EVERY=20 # Check every n passes of status check
 SMTP_COUNTER=0
 CAM_COUNTER=0
 CAM_FIRST=0
@@ -66,10 +67,10 @@ R_SCP=0
 R_FTP=0
 DB_DIR="../Dropbox/.config"
 DB_DIR=`readlink --canonicalize "$DB_DIR"`
-DIR_WARNING_SIZE=2000000
-DIR_MAX_SIZE=6000000
-DB_DIR_WARNING_SIZE=4000000
-DB_DIR_MAX_SIZE=12000000
+DIR_WARNING_SIZE=20000
+DIR_MAX_SIZE=60000
+DB_DIR_WARNING_SIZE=40000
+DB_DIR_MAX_SIZE=120000
 
 sleep $T_INITIAL_DELAY
 
@@ -115,16 +116,19 @@ do
 	then
 		if [ $((CAM_FIRST)) -ge $((1)) ]
 		then
+		# It's not first picture
 			if [ $((CAM_COUNTER)) -ge $((T_CAM_EVERY)) ]
 			then
 				./camera.sh $T_CAM_DELAY 0 &
 				CAM_COUNTER=0
 			fi
 		else
+		# It's first picture → capture and send as soon as possible
 			CAM_FIRST=1
 			./camera.sh 0 1
 		fi
 		./send_later.sh
+		[[ $? -ge 1 ]] && CONNECTION_SMTP=0
 	else
 		# When no smtp or connection was established - uncomment if you want to make pictures offline
 		#if [ $((CAM_COUNTER)) -ge $((T_CAM_EVERY)) ]
@@ -138,7 +142,7 @@ do
 	if [[ $CONNECTION_MODE -eq "1" ]] && [[ $CONNECTION_SMTP -eq "0" ]]
 	then
 	# when smtp was not succesfull and there is connection
-		[[ $R_DB -eq 1 ]] && ./a_up_dropbox.sh $DB_DIR
+		[[ $R_DB -eq 1 ]] && ./a_up_dropbox.sh $DB_DIR "tosendlater" $DB_DIR_MAX_SIZE $DB_DIR_WARNING_SIZE
 		[[ $R_SCP -eq 1 ]] && ./a_up_scp.sh
 		[[ $R_FTP -eq 1 ]] && ./a_up_ftp.sh
 		sleep 0
@@ -147,7 +151,7 @@ do
 	if [ $CONNECTION_MODE -eq "0" ]
 	then
 	# when connection is down, still try to upload by dropbox, mayby he will be able to connect
-		[[ $R_DB -eq 1 ]] && ./a_up_dropbox.sh $DB_DIR
+		[[ $R_DB -eq 1 ]] && ./a_up_dropbox.sh $DB_DIR "tosendlater" $DB_DIR_MAX_SIZE $DB_DIR_WARNING_SIZE
 		sleep 0
 	fi
 
