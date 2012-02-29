@@ -4,7 +4,8 @@ fsendemail "SendLaterCommand - $DATA" "Data" "$1"
 if [[ $RESP == *"Email was sent successfully!" ]]
 then
 	rm "$1"
+	exit 0
 fi
-
+exit 1
 
 
