@@ -5,11 +5,11 @@ DATA=`date +"%Y-%m-%d-%H-%M-%S"`
 FILE=""
 if [ "$(ls -A $DIR)" ]; then
 	FILENAME="tmp/package$DATA.zip"
-	
-	zip -1 -r $FILENAME $DIR
-	FILESIZE=$(stat -c%s "tmp/package$DATA.zip")
-	if [ $FILESIZE -le 1000000 ]
+	FILESIZE=`du -s $DIR/ | cut -f 1`
+	#FILESIZE=$(stat -c%s "tmp/package$DATA.zip")
+	if [ $FILESIZE -le 5000 ]
 	then
+		zip -1 -r $FILENAME $DIR
 		fsendemail "SendLater - $DATA" "Data" "$FILENAME"
 		if [[ $RESP == *"Email was sent successfully!" ]]
 		then
@@ -17,9 +17,9 @@ if [ "$(ls -A $DIR)" ]; then
 			rm $DIR/*
 		else
 			rm $FILENAME
+			find "$DIR" -type f -exec ./send_later_command.sh {} \;
 		fi
 	else
-		rm "$FILENAME"
 		find "$DIR" -type f -exec ./send_later_command.sh {} \;
 	fi
 fi
