@@ -7,6 +7,7 @@
 
 
 cp -u $2/* $1/
+
 if [ $3 -ge $4 ]
 then
 	CLEAN_DIR_WHILE=0
@@ -14,9 +15,7 @@ then
 	while [ $CLEAN_DIR_WHILE -lt 1 ]; do
 		if [ $DIRSIZE -ge $3 ]
 		then
-			file=`/bin/ls -1 "$1" | sort --random-sort | head -1 | while read psLine; do [ ! -f "$2/$psLine" ] && echo "$psLine"; done`
-			path=`readlink --canonicalize "$1/$file"` # Converts to full path
-			[ -f $path ] && rm "$path"
+			/bin/ls -1 "$1" | sort --random-sort | head -10 | while read psLine; do [ ! -f "$2/$psLine" ] && [ -f "$1/$psLine" ] && rm "test/$psLine"; done
 		else
 			CLEAN_DIR_WHILE=$(($CLEAN_DIR_WHILE+1))
 		fi
