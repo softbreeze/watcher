@@ -1,6 +1,7 @@
 Requied packages:
 -bash
 -curl
+-wget
 -imagemagick & convert
 -mencoder & mplayer OR
 -streamer
@@ -11,7 +12,7 @@ Requied packages:
 Installation
 1) edit "watcher" file, which contains important variables
 2) edit function.sh with proper server information (smtp server, port, user, password)
-3) if you wish, edit variables in watcher.sh (eg. wheather to run dropbox module, delays and how often certain actions should be performed)
+3) if you wish, edit variables in watcher.sh (eg. weather to run dropbox module, delays and how often certain actions should be performed)
 4) run ./watch_inic.sh - it should install the script if run for the first time. WARNING: if you run this script, and INSTALL_DIR points to egisting folder, it will be deleted.
 5) now you have to manually add $INSTALL_DIR/watcher.sh to gnome/kde autostart (you can do what is done in next step, but add it to PostLogin dir) 
 6) add to /etc/gdm/PostSession/Default folowing line
@@ -30,7 +31,7 @@ To do list:
 - currently if one of directories are deleted, the scipts stops working - it should be fixed.
 - activating user tracking only if "certain user can connect to to internet and certain web page contains certain string"
 - keylogger
-- using dropbox, ftp and ssh or other to upload data
+- using ftp and ssh or other to upload data
 - (mayby) forcing activation of vnc/ssh
 
 P.S.
