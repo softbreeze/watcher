@@ -7,9 +7,13 @@ function check_connection {
 	# It would be better to ping google or yahoo or microsoft, or all at once.
 	#ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && CONNECTION_MODE=1 || CONNECTION_MODE=0
 	CONNECTION_MODE=0
-	ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1
-	ping -q -w 1 -c 1 www.yahoo.com > /dev/null && CONNECTION_MODE=1
-	ping -q -w 1 -c 1 www.microsoft.com > /dev/null && CONNECTION_MODE=1
+	ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1; return 0
+	ping -q -w 1 -c 1 www.yahoo.com > /dev/null && CONNECTION_MODE=1; return 0
+	ping -q -w 1 -c 1 www.microsoft.com > /dev/null && CONNECTION_MODE=1; return 0
+	[ ! wget -q -O /dev/null --no-cache http://www.google.com/ ] && CONNECTION_MODE=1; return 0
+	[ ! wget -q -O /dev/null --no-cache http://www.yahoo.com/ ] && CONNECTION_MODE=1; return 0
+	[ ! wget -q -O /dev/null --no-cache http://www.microsoft.com/ ] && CONNECTION_MODE=1; return 0
+	[ ! wget -q -O /dev/null --no-cache http://www.onet.pl/ ] && CONNECTION_MODE=1; return 0
 }
 
 function check_smtp {
@@ -23,6 +27,7 @@ function check_smtp {
 	else
 		CONNECTION_SMTP=0
 	fi
+	rm check.zip
 }
 
 function check_dir_size {
@@ -49,6 +54,9 @@ function clean_dir {
 	rm "$path"
 }
 
+
+
+
 CONNECTION_MODE=0 # 0-no connection; 1-connection
 SMTP=0
 
@@ -72,25 +80,48 @@ DIR_MAX_SIZE=60000
 DB_DIR_WARNING_SIZE=40000
 DB_DIR_MAX_SIZE=120000
 
+
+################
+# Script start
+########
 sleep $T_INITIAL_DELAY
 
+
+################
+# Modules activation
+########
 ./inf.sh $T_INF_CHECK &
 ./screenshot.sh $T_SCREEN_CHECK &
 
+
+################
+# Loop begins
+########
+check_connection
 check_smtp
 while true
 do
+	start_time=$(date +%s)
+
+
 	################
-	# Check connection
+	# Rules: connecition
 	########
-	check_connection
 	if [[ $CONNECTION_MODE -eq "0" ]] && [[ $CONNECTION_SMTP -eq "1" ]]
 	then
 		check_connection
 		check_smtp
 		SMTP_COUNTER=0
 	fi
+	if [[ $CONNECTION_MODE -eq "0" ]] && [[ $CONNECTION_SMTP -eq "1" ]]
+	then
+		# If sendemail succeded twice, but ping not → ping signals must be blocked
+		CONNECTION_MODE=1
+		CONNECTION_SMTP=1
+	fi
+
 	SMTP_COUNTER=$(($SMTP_COUNTER+1))
+
 	if [ $((SMTP_COUNTER)) -ge $((T_SMTP_CHECK_EVERY)) ]
 	then
 		SMTP_COUNTER=0
@@ -103,6 +134,7 @@ do
 	fi
 	#echo "Connection mode $CONNECTION_MODE; SMTP mode $CONNECTION_SMTP"
 
+
 	################
 	# Camera counter, so we won't make pictures too often
 	########
@@ -110,7 +142,7 @@ do
 
 
 	################
-	# Rules to act
+	# Rules: sending information
 	########
 	if [[ $CONNECTION_MODE -eq "1" ]] && [[ $CONNECTION_SMTP -eq "1" ]]
 	then
@@ -151,7 +183,7 @@ do
 	if [ $CONNECTION_MODE -eq "0" ]
 	then
 	# when connection is down, still try to upload by dropbox, mayby he will be able to connect
-		[[ $R_DB -eq 1 ]] && ./a_up_dropbox.sh $DB_DIR "tosendlater" $DB_DIR_MAX_SIZE $DB_DIR_WARNING_SIZE
+		[[ $R_DB -eq 1 ]] && ./a_up_dropbox.sh $DB_DIR "tosendlater" $DB_DIR_MAX_SIZE $DIR_MAX_SIZE
 		sleep 0
 	fi
 
@@ -167,8 +199,18 @@ do
 	fi 
 
 
+        finish_time=$(date +%s)
+	time_duration=$((finish_time - start_time))
+        echo "$time_duration"
+
 	################
 	# Sleep for a while
 	########
 	sleep $T_CHECK_STATUS
+
+
+	################
+	# Check connection
+	########
+	check_connection
 done
