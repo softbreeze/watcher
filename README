@@ -8,6 +8,7 @@ Requied packages:
 -zip
 -sendemail
 -ifconfig, iwconfig, iwlist, lsmod, date
+-md5sum
 
 Installation
 1) edit "watcher" file, which contains important variables
