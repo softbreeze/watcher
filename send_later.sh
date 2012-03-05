@@ -25,7 +25,6 @@ if [ "$(ls -A $DIR)" ]; then
 			exit 0 # which means averything is all rught
 		else
 			rm $FILENAME
-			fsendemail "SendLater - $DATA" "Data" "$FILENAME"
 			FILESIZE2=`du -s $DIR/ | cut -f 1`
 			# exit with "2" signal which means that one big email was not send
 			[[ $FILESIZE2 -ge $FILESIZE ]] && exit 2

