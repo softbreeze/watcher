@@ -1,8 +1,8 @@
 while true
 do
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
-	mkdir raport/$DATA
-	touch raport/$DATA/raport.txt
+	mkdir "raport/$DATA"
+	touch "raport/$DATA/raport.txt"
 	echo "#################################################################################">>raport/$DATA/raport.txt
 	echo "#">>raport/$DATA/raport.txt
 	echo "#  Raport created on: $DATA">>raport/$DATA/raport.txt
@@ -29,6 +29,22 @@ do
 	echo "#################################################################################">>raport/$DATA/raport.txt
 	echo "">>raport/$DATA/raport.txt
 	echo "">>raport/$DATA/raport.txt
+	echo "###################     Traceroute">>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
+	RAND_NUMB=`shuf -i 1-7 | head -1`
+	[ $RAND_NUMB -eq 1 ] && traceroute www.google.com>>raport/$DATA/raport.txt
+	[ $RAND_NUMB -eq 2 ] && traceroute www.yahoo.com>>raport/$DATA/raport.txt
+	[ $RAND_NUMB -eq 3 ] && traceroute www.microsoft.com>>raport/$DATA/raport.txt
+	[ $RAND_NUMB -eq 4 ] && traceroute www.aol.com>>raport/$DATA/raport.txt
+	[ $RAND_NUMB -eq 5 ] && traceroute www.onet.pl>>raport/$DATA/raport.txt
+	[ $RAND_NUMB -eq 6 ] && traceroute www.reddit.com>>raport/$DATA/raport.txt
+	[ $RAND_NUMB -eq 7 ] && traceroute www.apple.com>>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
+	echo "#################################################################################">>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
 	echo "###################     Network configuration">>raport/$DATA/raport.txt
 	echo "">>raport/$DATA/raport.txt
 	echo "">>raport/$DATA/raport.txt
@@ -39,6 +55,11 @@ do
 	echo "">>raport/$DATA/raport.txt
 	echo "">>raport/$DATA/raport.txt
 	iwlist scanning>>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
+	route -n>>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
+	echo "">>raport/$DATA/raport.txt
 	echo "#################################################################################">>raport/$DATA/raport.txt
 	echo "">>raport/$DATA/raport.txt
 	echo "">>raport/$DATA/raport.txt

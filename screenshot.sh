@@ -1,7 +1,7 @@
 while true
 do
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
-	mkdir screenshot/$DATA
+	mkdir "screenshot/$DATA"
 
 	# screenshot:
 	import -window root screenshot/$DATA/screenshot.bmp
@@ -11,6 +11,6 @@ do
 	zip -r tosend/screenshot-$DATA.zip -P 42p6b2V3hy7c92g42p6b2V3hy7c92g screenshot/$DATA
 	mv tosend/screenshot-$DATA.zip tosendlater/screenshot-$DATA.zip
 	rm screenshot/$DATA/*
-	rmdir screenshot/$DATA
+	rmdir "screenshot/$DATA"
 	sleep $1
 done
