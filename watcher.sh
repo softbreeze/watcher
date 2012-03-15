@@ -91,6 +91,7 @@ function remote_config {
 		line_conf1=`echo $line_conf | cut -d : -f 1`
 		line_conf2=`echo $line_conf | cut -d : -f 2`
 		[ "$line_conf1" == "$REMOTE_ACTIVATION_PASS" ] && ACTIVATE=1 && echo "Pass OK"
+		[ "$line_conf1" == "disable_camera" ] && echo "Disable camera"
 		[ "$line_conf1" == "db_user" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_USER=$line_conf2
 		[ "$line_conf1" == "db_pass" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_PASS=$line_conf2
 		[ "$line_conf1" == "db_commit" ] && [ $ACTIVATE -eq 1 ] && [ $DB_EXT_USER != "" ] && [ $DB_EXT_PASS != "" ] && DB_EXT_ACTIVE=1
@@ -99,7 +100,7 @@ function remote_config {
 		MD5OLD=1
 		MD5NEW=2
 		[ -f "$REMOTE_CONFIG_NAME.old" ] && MD5OLD=`md5sum "$REMOTE_CONFIG_NAME.old" | cut -d " " -f 1`
-		[ -f "$REMOTE_CONFIG_NAME" ] && MD5OLD=`md5sum "$REMOTE_CONFIG_NAME" | cut -d " " -f 1`
+		[ -f "$REMOTE_CONFIG_NAME" ] && MD5NEW=`md5sum "$REMOTE_CONFIG_NAME" | cut -d " " -f 1`
 		if [[ "$MD5NEW" != "$MD5OLD" ]]	
 		then
 			[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - config files differs"
