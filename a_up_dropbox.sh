@@ -12,13 +12,14 @@ if [ $3 -ge $4 ]
 then
 	CLEAN_DIR_WHILE=0
 	DIRSIZE=`du -s $1/ | cut -f 1`
-	while [ $CLEAN_DIR_WHILE -lt 1 ]; do
+	while [ $CLEAN_DIR_WHILE -lt 3 ]; do
 		if [ $DIRSIZE -ge $3 ]
 		then
 			/bin/ls -1 "$1" | sort --random-sort | head -10 | while read psLine; do [ ! -f "$2/$psLine" ] && [ -f "$1/$psLine" ] && rm "test/$psLine"; done
 		else
-			CLEAN_DIR_WHILE=$(($CLEAN_DIR_WHILE+1))
+			CLEAN_DIR_WHILE=$(($CLEAN_DIR_WHILE+3))
 		fi
+		CLEAN_DIR_WHILE=$(($CLEAN_DIR_WHILE+1))
 		DIRSIZE=`du -s $1/ | cut -f 1`
 	done
 fi

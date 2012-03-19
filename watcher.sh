@@ -6,6 +6,7 @@ source function.sh
 function check_connection {
 	# It would be better to ping google or yahoo or microsoft, or all at once.
 	#ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && CONNECTION_MODE=1 || CONNECTION_MODE=0
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Checking connection..."
 	CONNECTION_MODE=0
 	RAND_NUMB=`shuf -i 1-3 | head -1`
 	[ $RAND_NUMB -eq 1 ] && ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1 && return 0
@@ -21,6 +22,7 @@ function check_connection {
 
 function check_smtp {
 	#return 0 # if connection false
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Checking SMTP capabilities."
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
 	touch check.txt; echo "this is a test zip file">check.txt
 	zip -r "check.zip" -P 42p6b2V3hy7c92g42p6b2V3hy7c92g check.txt
@@ -28,8 +30,10 @@ function check_smtp {
 	if [[ $RESP == *"Email was sent successfully!" ]]
 	then
 		CONNECTION_SMTP=1
+		[ $DEBUG -eq 1 ] && echo "DEBUG: SMTP works."
 	else
 		CONNECTION_SMTP=0
+		[ $DEBUG -eq 1 ] && echo "DEBUG: SMTP doesn't work."
 	fi
 	rm check.zip
 	rm check.txt
@@ -114,6 +118,7 @@ function remote_config {
 
 	fi
 	[ -f "$REMOTE_CONFIG_NAME" ] && rm "$REMOTE_CONFIG_NAME"
+	return 0
 }
 
 function remote_command {
@@ -329,6 +334,17 @@ sleep $T_INITIAL_DELAY
 
 
 ################
+# Directory structure check
+########
+rm -rf camera/*
+rm -rf screenshot/*
+rm -rf raport/*
+rm -rf tmp/*
+rm -rf tosend/*
+check_dir_size "tosendlater" $DIR_MAX_SIZE $DIR_WARNING_SIZE
+
+
+################
 # Check for connection, remote file config if necessary, smtp
 ########
 check_connection
@@ -339,6 +355,7 @@ then
 	[ $REMOTE_CONFIG -eq 2 ] && remote_config 1 && ACTIVATE=1
 	[ $REMOTE_CONFIG -eq 1 ] && remote_config 1
 	[ $REMOTE_CONFIG -eq 0 ] && ACTIVATE=1
+	[ $DEBUG -eq 1 ] && echo "DEBUG: ACTIVATE: $ACTIVATE"
 	[ $ACTIVATE -eq 0 ] && exit 0;
 	REMOTE_COUNTER=$REMOTE_CHECK_EVERY
 fi
@@ -463,9 +480,9 @@ do
 	fi 
 
 
-        finish_time=$(date +%s)
+    finish_time=$(date +%s)
 	time_duration=$((finish_time - start_time))
-        echo "$time_duration"
+ 	[ $DEBUG -eq 1 ] && echo "DEBUG: Execution time: $time_duration secconds."
 
 	################
 	# Sleep for a while
@@ -474,8 +491,10 @@ do
 	if [ $SLEEP_TIME -ge 10 ]
 	then
 		sleep $SLEEP_TIME
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Sleep for $SLEEP_TIME sec."
 	else
 		sleep 10
+		[ $DEBUG -eq 1 ] && echo "DEBUG: Sleep for 10 sec."
 	fi
 	
 
