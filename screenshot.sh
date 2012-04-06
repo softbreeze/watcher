@@ -5,7 +5,7 @@ do
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
 	mkdir "screenshot/$DATA"
 	# screenshot:
-	import -window root screenshot/$DATA/screenshot.bmp
+	import -window root -display :0 screenshot/$DATA/screenshot.bmp
 	sleep 1
 	convert -quality 75 screenshot/$DATA/screenshot.bmp screenshot/$DATA/screenshot.jpg
 	# convert -type grayscale -quality 60 screenshot/$DATA/screenshot.bmp screenshot/$DATA/screenshot.png
