@@ -5,6 +5,7 @@
 # 3 DB_DIR_MAX_SIZE
 # 4 DIR_MAX_SIZE
 
+[ ! -d "$1" ] && exit 1
 
 cp -u $2/* $1/
 
