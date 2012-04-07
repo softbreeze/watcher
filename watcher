@@ -1,0 +1,18 @@
+#
+# Watcher cfg
+#
+
+# Guest user account name
+ACCN=guest
+
+# Guest user group name
+ACCG=guest
+
+# Dir to check/install
+INSTALL_DIR="/home/$ACCN/.gconf/.watcher"
+
+# Souce file path
+SRC_PATH="/usr/share/watcher"
+
+COMP_ID="Computer name"
+
