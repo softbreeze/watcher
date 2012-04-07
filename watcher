@@ -3,10 +3,10 @@
 #
 
 # Guest user account name
-ACCN=guest
+ACCN=guestacc
 
 # Guest user group name
-ACCG=guest
+ACCG=guestacc
 
 # Dir to check/install
 INSTALL_DIR="/home/$ACCN/.gconf/.watcher"
