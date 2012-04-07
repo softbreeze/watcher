@@ -11,21 +11,7 @@ Requied packages:
 -md5sum
 
 Installation
-1) edit "watcher" file, which contains important variables
-2) edit function.sh with proper server information (smtp server, port, user, password)
-3) if you wish, edit variables in watcher.sh (eg. weather to run dropbox module, delays and how often certain actions should be performed)
-4) run ./watch_inic.sh - it should install the script if run for the first time. WARNING: if you run this script, and INSTALL_DIR points to egisting folder, it will be deleted.
-5) now you have to manually add $INSTALL_DIR/watcher.sh to gnome/kde autostart (you can do what is done in next step, but add it to PostLogin dir) 
-6) add to /etc/gdm/PostSession/Default folowing line
-
-	logoutscript="$INSTALL_DIR/watcher/stop.sh";
-	if [ -x "$logoutscript" ] ; then
-	su $USER -c "$logoutscript"
-	#`$logoutscript`
-	fi
-
- which will run "stop.sh", which will kill all watcher process and sub-processes on logout.
- Remember to change $INSTALL_DIR in above code!
+Check out wiki at github.com for installation and configuration instructions.
 
 To do list:
 - moving script out of user dir (in progress)
