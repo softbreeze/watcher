@@ -11,12 +11,12 @@ while [  $COUNTER -lt 1 ]; do
 	sleep 1
 	if [ -z "$(pgrep kill_soft2.sh)" ]
 	then
-		let COUNTER=COUNTER+1
+		COUNTER=$(($COUNTER+1))
 	fi
-	let COUNTER2=COUNTER2+1
+	COUNTER2=$(($COUNTER2+1))
 	if [ "$COUNTER2" -gt "$MaxTimes" ]
 	then
-		let COUNTER=COUNTER+1
+		COUNTER=$(($COUNTER+1))
 	fi
 done
 exit 0

