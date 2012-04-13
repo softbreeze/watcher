@@ -8,7 +8,7 @@ COUNTER=0
 MaxTimes=20
 COUNTER2=0
 while [  $COUNTER -lt 1 ]; do
-	sleep 1
+	\sleep 1
 	if [ -z "$(pgrep kill_soft2.sh)" ]
 	then
 		COUNTER=$(($COUNTER+1))
