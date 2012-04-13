@@ -22,7 +22,7 @@ SMTP_ENABLED[2]=1
 
 function fsendemail {
 	[ $SMTP_SEND_COUNT -ge $SMTP_MAX_SEND_COUNT ] && echo "$SMTP_SEND_COUNT is greater or equal to $SMTP_MAX_SEND_COUNT" && change_smtp_server
-	RESP=`sendemail -f $SMTP_MAIL_FROM -t $SMTP_MAIL_TO -s $SMTP_SERVER -u "$COMP_ID - $1" -m "$2" -a "$3"  -xu "$SMTP_USER" -xp $SMTP_PASS`
+	RESP=`\sendemail -f $SMTP_MAIL_FROM -t $SMTP_MAIL_TO -s $SMTP_SERVER -u "$COMP_ID - $1" -m "$2" -a "$3"  -xu "$SMTP_USER" -xp $SMTP_PASS`
 	[ $DEBUG -eq 1 ] && echo "DEBUG: sendemail -f $SMTP_MAIL_FROM -t $SMTP_MAIL_TO -s $SMTP_SERVER -u "$COMP_ID - $1" -m "$2" -a "$3"  -xu \"$SMTP_USER\" -xp $SMTP_PASS"
 	[ $DEBUG -eq 1 ] && echo "DEBUG: $RESP"
 	[[ ! $RESP == *"Email was sent successfully!" ]] && SMTP_SEND_COUNT=$SMTP_MAX_SEND_COUNT
